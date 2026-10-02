@@ -380,13 +380,21 @@ export class GameScene extends Phaser.Scene {
 
   private drawSlots(): void {
     const boardPx = GRID_SIZE * TILE;
+    // fillGradientStyle only renders under WebGL; without a solid fillStyle
+    // set first, a Canvas-renderer fallback leaves these fillRect calls
+    // using whatever fill was last active (defaulting to opaque black),
+    // painting solid black bars across the board instead of a soft fade.
     const vignette = this.add.graphics().setDepth(-1);
+    vignette.fillStyle(0x000000, 0.25);
     vignette.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.5, 0.5, 0, 0);
     vignette.fillRect(0, 0, boardPx, boardPx * 0.18);
+    vignette.fillStyle(0x000000, 0.25);
     vignette.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.5, 0.5);
     vignette.fillRect(0, boardPx * 0.82, boardPx, boardPx * 0.18);
+    vignette.fillStyle(0x000000, 0.2);
     vignette.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.4, 0, 0.4, 0);
     vignette.fillRect(0, 0, boardPx * 0.14, boardPx);
+    vignette.fillStyle(0x000000, 0.2);
     vignette.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0.4, 0, 0.4);
     vignette.fillRect(boardPx * 0.86, 0, boardPx * 0.14, boardPx);
 
@@ -399,6 +407,7 @@ export class GameScene extends Phaser.Scene {
         const x = c * TILE + 2 * S;
         const y = r * TILE + 2 * S;
         const s = TILE - 4 * S;
+        g.fillStyle(base, 1);
         g.fillGradientStyle(light, light, base, base, 1);
         g.fillRoundedRect(x, y, s, s, 10 * S);
         g.lineStyle(S, 0x120a20, 0.5);
@@ -416,7 +425,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     const border = this.add.graphics().setDepth(4);
-    border.lineStyle(2 * S, 0xe8b64f, 0.35);
+    border.lineStyle(2 * S, 0xe8b64f, 0.5);
     border.strokeRoundedRect(3 * S, 3 * S, boardPx - 6 * S, boardPx - 6 * S, 14 * S);
   }
 

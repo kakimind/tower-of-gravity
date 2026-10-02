@@ -230,12 +230,18 @@ export class LobbyScene extends Phaser.Scene {
     const windowYs = [baseY - 28 * S, baseY - 68 * S, baseY - 108 * S];
     windowYs.forEach((wy, i) => {
       const rr = (i === 0 ? 9 : 7) * S;
+      // Soft bloom halo behind the pane, like warm candlelight spilling
+      // through the glass into the night — added first so it sits behind.
+      const glow = this.add.circle(cx, wy, rr * 2.4, 0xffd27a, 0.16);
       const win = this.add.circle(cx, wy, rr, 0xffe9a8, 0.85);
       win.setStrokeStyle(1.5 * S, 0xe8b64f, 0.9);
       const bar1 = this.add.rectangle(cx, wy, rr * 2 + 2 * S, 1.4 * S, 0x150f26, 0.6);
       const bar2 = this.add.rectangle(cx, wy, 1.4 * S, rr * 2 + 2 * S, 0x150f26, 0.6);
       this.tweens.add({
         targets: [win, bar1, bar2], alpha: 0.35, yoyo: true, repeat: -1, duration: 1100, delay: i * 500,
+      });
+      this.tweens.add({
+        targets: glow, alpha: 0.04, scale: 1.15, yoyo: true, repeat: -1, duration: 1800, delay: i * 400, ease: 'Sine.easeInOut',
       });
     });
 
@@ -288,9 +294,13 @@ export class LobbyScene extends Phaser.Scene {
     g.lineStyle(S, 0xe8b64f, 0.5);
     g.lineBetween(x, apexY, x - (w + 6 * S) / 4, brimY);
 
+    const winGlow = this.add.circle(x, baseY - bodyH / 2, 3.5 * S * 2.2, 0xffd27a, 0.14);
     const win = this.add.circle(x, baseY - bodyH / 2, 3.5 * S, 0xffe9a8, 0.8);
     this.tweens.add({
       targets: win, alpha: 0.3, yoyo: true, repeat: -1, duration: 1300, delay: side > 0 ? 300 : 0,
+    });
+    this.tweens.add({
+      targets: winGlow, alpha: 0.04, scale: 1.15, yoyo: true, repeat: -1, duration: 1700, delay: side > 0 ? 200 : 0, ease: 'Sine.easeInOut',
     });
 
     const tip = this.add.circle(x, apexY - 3 * S, 2.5 * S, 0xffe9a8, 0.9);
