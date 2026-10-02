@@ -1,7 +1,12 @@
 import { CANDY_TYPE_COUNT } from '../config/GameConfig';
 
-export function randomType(): number {
-  return Math.floor(Math.random() * CANDY_TYPE_COUNT);
+// colorCount lets early stages restrict the board to fewer ingredient types
+// (an easier board to read) while later stages use the full palette — a
+// difficulty knob independent of target score / move limit. Defaults to the
+// full palette for callers that don't care (e.g. tests, hint-finding on an
+// already-built grid).
+export function randomType(colorCount: number = CANDY_TYPE_COUNT): number {
+  return Math.floor(Math.random() * colorCount);
 }
 
 function wouldMatchAt(grid: number[][], r: number, c: number, type: number): boolean {
@@ -10,14 +15,14 @@ function wouldMatchAt(grid: number[][], r: number, c: number, type: number): boo
   return false;
 }
 
-export function buildInitialTypeGrid(size: number): number[][] {
+export function buildInitialTypeGrid(size: number, colorCount: number = CANDY_TYPE_COUNT): number[][] {
   const grid: number[][] = Array.from({ length: size }, () => new Array(size).fill(-1));
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      let type = randomType();
+      let type = randomType(colorCount);
       let guard = 0;
       while (wouldMatchAt(grid, r, c, type) && guard < 50) {
-        type = randomType();
+        type = randomType(colorCount);
         guard++;
       }
       grid[r][c] = type;

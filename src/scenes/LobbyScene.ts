@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GRID_SIZE, TILE, UI_SCALE, ART_SIZE } from '../config/GameConfig';
-import { TOTAL_STAGES } from '../engine/StageConfig';
+import { TOTAL_STAGES, SPECIAL_UNLOCK_FLOOR, isSpecialUnlocked } from '../engine/StageConfig';
 import {
   getCurrentStage, getUnlockedStage, getCurrency, addCurrency,
   trySpendCurrency, getBoosts, addBonusMovesBoost, addSpecialBoost,
@@ -517,8 +517,10 @@ export class LobbyScene extends Phaser.Scene {
     children.push(...rowMoves);
     rowY += rowGap;
 
+    const unlockedStage = getUnlockedStage();
     SPECIAL_SHOP_ITEMS.forEach((item) => {
       const thisRowY = rowY;
+      const unlocked = isSpecialUnlocked(item.type, unlockedStage);
       const row = this.buildShopRow(cx, thisRowY, t(item.labelKey), t('lobby.priceStardust', { n: item.price }), () => {
         if (trySpendCurrency(item.price)) {
           addSpecialBoost(item.type);
@@ -526,7 +528,10 @@ export class LobbyScene extends Phaser.Scene {
         } else {
           this.flashInsufficient(cx, thisRowY + 18 * S);
         }
-      }, { textureKey: specialTextureKey(item.type), glowColor: SPECIAL_THEMES[item.type].glow });
+      }, {
+        textureKey: specialTextureKey(item.type), glowColor: SPECIAL_THEMES[item.type].glow,
+        locked: unlocked ? undefined : { floor: SPECIAL_UNLOCK_FLOOR[item.type] },
+      });
       children.push(...row);
       rowY += rowGap;
     });
@@ -549,9 +554,10 @@ export class LobbyScene extends Phaser.Scene {
 
   private buildShopRow(
     cx: number, cy: number, label: string, price: string, onBuy: () => void,
-    icon?: { textureKey: string; glowColor: string },
+    icon?: { textureKey: string; glowColor: string; locked?: { floor: number } },
   ): Phaser.GameObjects.GameObject[] {
     const items: Phaser.GameObjects.GameObject[] = [];
+    const locked = icon?.locked;
 
     // Slot card behind the row: a soft dark backing with a thin gold divider
     // along the bottom, so the shop reads as a stacked list of distinct
@@ -559,9 +565,9 @@ export class LobbyScene extends Phaser.Scene {
     const rowW = 332 * S;
     const rowH = 28 * S;
     const card = this.add.graphics();
-    card.fillStyle(0x1c1330, 0.35);
+    card.fillStyle(0x1c1330, locked ? 0.2 : 0.35);
     card.fillRoundedRect(cx - rowW / 2, cy - rowH / 2, rowW, rowH, 8 * S);
-    card.lineStyle(S, 0xe8b64f, 0.16);
+    card.lineStyle(S, 0xe8b64f, locked ? 0.08 : 0.16);
     card.lineBetween(cx - rowW / 2 + 12 * S, cy + rowH / 2, cx + rowW / 2 - 12 * S, cy + rowH / 2);
     items.push(card);
 
@@ -569,9 +575,9 @@ export class LobbyScene extends Phaser.Scene {
 
     if (icon) {
       const glowColor = Phaser.Display.Color.HexStringToColor(icon.glowColor).color;
-      const glow = this.add.circle(cx - 167 * S, cy, 17 * S, glowColor, 0.22);
+      const glow = this.add.circle(cx - 167 * S, cy, 17 * S, glowColor, locked ? 0.08 : 0.22);
       const glowTween = this.tweens.add({
-        targets: glow, alpha: 0.08, scale: 1.15, yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.easeInOut',
+        targets: glow, alpha: locked ? 0.03 : 0.08, scale: 1.15, yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.easeInOut',
       });
       // The shop panel is rebuilt from scratch on every open (toggleShop ->
       // buildShop), so these infinite repeat:-1 tweens would otherwise pile
@@ -579,14 +585,27 @@ export class LobbyScene extends Phaser.Scene {
       glow.once(Phaser.GameObjects.Events.DESTROY, () => glowTween.remove());
       const iconImg = this.add.image(cx - 167 * S, cy, icon.textureKey);
       iconImg.setDisplaySize(28 * S, 28 * S);
+      if (locked) iconImg.setAlpha(0.35).setTint(0x8a7aa8);
       items.push(glow, iconImg);
     }
 
     const labelText = this.add.text(labelX, cy, label, {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, fontStyle: '700', color: '#f3e6c8',
+      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, fontStyle: '700',
+      color: locked ? '#8a7aa8' : '#f3e6c8',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0, 0.5);
     items.push(labelText);
+
+    if (locked) {
+      // Locked rows show where the item unlocks instead of a buy button —
+      // no interaction, just a preview of what's still ahead.
+      const lockLabel = this.add.text(cx + 150 * S, cy, `🔒 ${t('lobby.unlocksAtFloor', { floor: locked.floor })}`, {
+        fontFamily: 'Cormorant Garamond, serif', fontSize: `${11 * S}px`, fontStyle: '700', color: '#8a7aa8',
+        align: 'center', wordWrap: { width: 130 * S },
+      }).setOrigin(0.5);
+      items.push(lockLabel);
+      return items;
+    }
 
     const buyBtn = createPillButton(this, cx + 150 * S, cy, price, {
       fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 12 * S, paddingY: 7 * S,

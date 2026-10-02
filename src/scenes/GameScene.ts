@@ -52,6 +52,11 @@ export class GameScene extends Phaser.Scene {
   private targetScore = 0;
   private movesRemaining = 0;
   private gravityFlipInterval = 5;
+  private colorCount = CANDY_TYPE_COUNT;
+  private lockCount = 0;
+  private lockHp = 1;
+  private lockGrid: number[][] = [];
+  private lockOverlays: (Phaser.GameObjects.Container | null)[][] = [];
   private movesUsed = 0;
   private score = 0;
   private busy = false;
@@ -89,6 +94,9 @@ export class GameScene extends Phaser.Scene {
       (type) => Array<SpecialType>(boosts.specialOwned[type]).fill(type),
     );
     this.gravityFlipInterval = cfg.gravityFlipInterval;
+    this.colorCount = cfg.colorCount;
+    this.lockCount = cfg.lockCount;
+    this.lockHp = cfg.lockHp;
     this.movesUsed = 0;
     this.score = 0;
     this.direction = 'down';
@@ -134,7 +142,7 @@ export class GameScene extends Phaser.Scene {
     this.ensureSparkTexture();
     this.drawSlots();
 
-    this.typeGrid = buildInitialTypeGrid(GRID_SIZE);
+    this.typeGrid = buildInitialTypeGrid(GRID_SIZE, this.colorCount);
     this.specialGrid = Array.from({ length: GRID_SIZE }, () => new Array<SpecialType | null>(GRID_SIZE).fill(null));
     this.board = [];
     for (let r = 0; r < GRID_SIZE; r++) {
@@ -144,6 +152,8 @@ export class GameScene extends Phaser.Scene {
       }
       this.board.push(row);
     }
+
+    this.setupLocks();
 
     this.placingSpecials = this.pendingSpecialQueue.length;
 
@@ -465,6 +475,75 @@ export class GameScene extends Phaser.Scene {
     return img;
   }
 
+  // Locked (icy) tiles are a passive overlay on top of a slot, independent of
+  // whichever candy currently sits there — they never block swapping or
+  // matching that cell directly, only thaw (lose one HP) when a match clears
+  // one of their 4 orthogonal neighbors. Keeping them tied to the fixed slot
+  // rather than to a falling sprite means gravity/refill code needs no
+  // changes at all to carry lock state around.
+  private setupLocks(): void {
+    this.lockGrid = Array.from({ length: GRID_SIZE }, () => new Array(GRID_SIZE).fill(0));
+    this.lockOverlays = Array.from({ length: GRID_SIZE }, () => new Array<Phaser.GameObjects.Container | null>(GRID_SIZE).fill(null));
+    if (this.lockCount <= 0) return;
+
+    const cells: Cell[] = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) cells.push({ row: r, col: c });
+    }
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+    cells.slice(0, this.lockCount).forEach(({ row, col }) => {
+      this.lockGrid[row][col] = this.lockHp;
+      this.lockOverlays[row][col] = this.createLockOverlay(row, col, this.lockHp);
+    });
+  }
+
+  private createLockOverlay(row: number, col: number, hp: number): Phaser.GameObjects.Container {
+    const size = CANDY_DISPLAY;
+    const g = this.add.graphics();
+    g.fillStyle(0xbfe8ff, 0.22);
+    g.fillRoundedRect(-size / 2, -size / 2, size, size, 12 * S);
+    g.lineStyle(2.5 * S, 0xe8f7ff, 0.85);
+    g.strokeRoundedRect(-size / 2, -size / 2, size, size, 12 * S);
+    const icon = this.add.text(0, -4 * S, '❄', {
+      fontSize: `${16 * S}px`, color: '#e8f7ff',
+    }).setOrigin(0.5);
+    const pips = this.add.text(0, 15 * S, '●'.repeat(hp), {
+      fontFamily: 'Cinzel Decorative, serif', fontSize: `${8 * S}px`, color: '#e8f7ff',
+    }).setOrigin(0.5);
+    return this.add.container(this.cellX(col), this.cellY(row), [g, icon, pips]).setDepth(8);
+  }
+
+  // Called with every cell a match just cleared (including ones consumed by
+  // a special-item detonation) — any locked tile orthogonally touching one
+  // of them thaws by one HP. Each lock thaws at most once per cascade step
+  // even if multiple cleared neighbors touch it, so a big combo doesn't
+  // insta-clear a lock the player hasn't actually worked to reach.
+  private damageLocksAround(cells: Cell[]): void {
+    const damaged = new Set<string>();
+    cells.forEach(({ row, col }) => {
+      const neighbors: Cell[] = [
+        { row: row - 1, col }, { row: row + 1, col }, { row, col: col - 1 }, { row, col: col + 1 },
+      ];
+      neighbors.forEach(({ row: nr, col: nc }) => {
+        if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) return;
+        const key = `${nr},${nc}`;
+        if (damaged.has(key) || this.lockGrid[nr][nc] <= 0) return;
+        damaged.add(key);
+        this.lockGrid[nr][nc] -= 1;
+        this.lockOverlays[nr][nc]?.destroy();
+        this.lockOverlays[nr][nc] = null;
+        if (this.lockGrid[nr][nc] > 0) {
+          this.lockOverlays[nr][nc] = this.createLockOverlay(nr, nc, this.lockGrid[nr][nc]);
+        } else {
+          this.spawnBurst(this.cellX(nc), this.cellY(nr), 0xbfe8ff);
+        }
+      });
+    });
+  }
+
   // Swipe is the primary way to move on a phone — tapping a tile then
   // hunting for its neighbor is fiddly with a thumb. A short drag off a
   // tile swaps it toward wherever it was dragged; a drag too short to count
@@ -664,7 +743,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
 
-      this.typeGrid = buildInitialTypeGrid(GRID_SIZE);
+      this.typeGrid = buildInitialTypeGrid(GRID_SIZE, this.colorCount);
       this.specialGrid = Array.from({ length: GRID_SIZE }, () => new Array<SpecialType | null>(GRID_SIZE).fill(null));
       const fadeIns: Promise<void>[] = [];
       for (let r = 0; r < GRID_SIZE; r++) {
@@ -957,6 +1036,7 @@ export class GameScene extends Phaser.Scene {
       this.typeGrid[r][c] = -1;
       this.specialGrid[r][c] = null;
     });
+    this.damageLocksAround(cellsToClear);
 
     await this.applyGravityAndRefill();
     await this.resolveCascade(comboMultiplier + 1);
@@ -1092,7 +1172,7 @@ export class GameScene extends Phaser.Scene {
 
       spawnTargets.forEach((targetIdx) => {
         const targetCell = cells[targetIdx];
-        const type = randomType();
+        const type = randomType(this.colorCount);
         const { x: entryX, y: entryY } = this.entryPosition(targetCell, emptyCount);
         const sprite = this.spawnCandySprite(targetCell.row, targetCell.col, type);
         sprite.setPosition(entryX, entryY);

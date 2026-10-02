@@ -90,6 +90,7 @@ export type TranslationKey =
   | 'lobby.get'
   | 'lobby.confirmWatchAdReward'
   | 'lobby.insufficientCurrency'
+  | 'lobby.unlocksAtFloor'
   | 'game.combo';
 
 type Dictionary = Record<TranslationKey, string>;
@@ -154,6 +155,7 @@ const ko: Dictionary = {
   'lobby.get': '받기',
   'lobby.confirmWatchAdReward': '광고를 보고 별가루\n200개를 받으시겠어요?',
   'lobby.insufficientCurrency': '별가루가 부족합니다',
+  'lobby.unlocksAtFloor': '{floor}층 해금',
   'game.combo': '콤보 x{n}!',
 };
 
@@ -217,6 +219,7 @@ const en: Dictionary = {
   'lobby.get': 'Get',
   'lobby.confirmWatchAdReward': 'Watch an ad to get\n200 Stardust?',
   'lobby.insufficientCurrency': 'Not enough Stardust',
+  'lobby.unlocksAtFloor': 'Floor {floor}+',
   'game.combo': 'COMBO x{n}!',
 };
 

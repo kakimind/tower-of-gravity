@@ -1,4 +1,7 @@
 import { getLanguage } from '../i18n';
+import { getFloor } from '../engine/StageConfig';
+
+export { getFloor };
 
 export interface StoryLine {
   speaker: string;
@@ -468,10 +471,6 @@ function simpleHash(n: number): number {
   let h = n * 2654435761;
   h = h ^ (h >>> 13);
   return Math.abs(h);
-}
-
-export function getFloor(stage: number): number {
-  return Math.ceil(stage / 10);
 }
 
 const EVENT_CHANCE = 0.15;
