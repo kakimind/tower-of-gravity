@@ -243,7 +243,10 @@ export class LobbyScene extends Phaser.Scene {
       const bx = cx + side * (roofHalfW - 7 * S);
       const bTop = brimY - 4 * S;
       const bannerG = this.add.graphics();
+      // fillGradientStyle only renders under WebGL; fillStyle first keeps
+      // the pennant red (not black) on a Canvas-renderer fallback.
       bannerG.fillStyle(0xb3122a, 1);
+      bannerG.fillGradientStyle(0xe0455a, 0xb3122a, 0xe0455a, 0xb3122a, 1);
       bannerG.fillRect(bx - 5 * S, bTop, 10 * S, 24 * S);
       bannerG.beginPath();
       bannerG.moveTo(bx - 5 * S, bTop + 24 * S);
@@ -251,6 +254,9 @@ export class LobbyScene extends Phaser.Scene {
       bannerG.lineTo(bx + 5 * S, bTop + 24 * S);
       bannerG.closePath();
       bannerG.fillPath();
+      // center fold crease, suggesting draped cloth rather than a flat card
+      bannerG.lineStyle(0.8 * S, 0x7a0d1d, 0.55);
+      bannerG.lineBetween(bx, bTop + 2 * S, bx, bTop + 21 * S);
       bannerG.lineStyle(S, 0xe8b64f, 0.7);
       bannerG.strokeRect(bx - 5 * S, bTop, 10 * S, 24 * S);
       this.tweens.add({

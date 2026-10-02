@@ -71,6 +71,9 @@ export function createPillButton(
   const top = shade(o.bgColor, 0.22);
   const bottom = shade(o.bgColor, -0.2);
   const bg = scene.add.graphics();
+  // fillGradientStyle only renders under the WebGL pipeline, so paint a
+  // solid base first in case the device falls back to the Canvas renderer.
+  bg.fillStyle(o.bgColor, o.bgAlpha);
   bg.fillGradientStyle(top, top, bottom, bottom, o.bgAlpha, o.bgAlpha, o.bgAlpha, o.bgAlpha);
   bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
   if (o.strokeAlpha > 0) {
