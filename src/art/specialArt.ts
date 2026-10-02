@@ -124,21 +124,21 @@ function buildColorBomb(): string {
   let orbits = '';
   orbitColors.forEach((color, i) => {
     const angle = (Math.PI * 2 * i) / orbitColors.length;
-    const rr = 17;
+    const rr = 29;
     const ox = c + Math.cos(angle) * rr;
     const oy = c + Math.sin(angle) * rr;
-    orbits += `<circle cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="3.4" fill="${color}" stroke="#180f2c" stroke-width="0.8" />`;
+    orbits += `<circle cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="5.6" fill="${color}" stroke="#180f2c" stroke-width="1" />`;
   });
   let swirl = '';
   for (let i = 0; i < 3; i++) {
-    const rr = 20 - i * 5;
-    swirl += `<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="${theme.light}" stroke-width="1.4" stroke-dasharray="4 5" opacity="${0.7 - i * 0.15}" />`;
+    const rr = 35 - i * 8;
+    swirl += `<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="${theme.light}" stroke-width="1.8" stroke-dasharray="5 6" opacity="${0.7 - i * 0.15}" />`;
   }
   const body = `
     ${swirl}
     ${orbits}
-    <circle cx="${c}" cy="${c}" r="8" fill="#ffffff" />
-    <circle cx="${c}" cy="${c}" r="8" fill="none" stroke="${theme.glow}" stroke-width="2.2" />
+    <circle cx="${c}" cy="${c}" r="14" fill="#ffffff" />
+    <circle cx="${c}" cy="${c}" r="14" fill="none" stroke="${theme.glow}" stroke-width="3" />
   `;
   return frame(id, theme, body);
 }

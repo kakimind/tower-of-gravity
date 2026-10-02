@@ -450,8 +450,8 @@ export class LobbyScene extends Phaser.Scene {
 
     SPECIAL_SHOP_ITEMS.forEach((item) => {
       const thisRowY = rowY;
-      const icon = this.add.image(cx - 164 * S, thisRowY, specialTextureKey(item.type));
-      icon.setDisplaySize(22 * S, 22 * S);
+      const icon = this.add.image(cx - 167 * S, thisRowY, specialTextureKey(item.type));
+      icon.setDisplaySize(28 * S, 28 * S);
       children.push(icon);
 
       const row = this.buildShopRow(cx, thisRowY, t(item.labelKey), t('lobby.priceStardust', { n: item.price }), () => {
