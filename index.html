@@ -371,13 +371,19 @@
       font-weight: 700;
       color: #150f26;
       background: linear-gradient(180deg, #ff8f8f, #e0524f);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 3px 8px rgba(0,0,0,0.35);
       border: none;
       border-radius: 10px;
       padding: 10px;
       cursor: pointer;
       margin-bottom: 10px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
     }
     .settings-exit-btn[hidden] { display: none; }
+    .settings-exit-btn:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 1px 3px rgba(0,0,0,0.3);
+    }
 
     .settings-close-btn {
       width: 100%;
@@ -385,11 +391,17 @@
       font-size: 14px;
       font-weight: 700;
       color: var(--parchment);
-      background: var(--night-800);
+      background: linear-gradient(180deg, #342752, #1e1638);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 3px 8px rgba(0,0,0,0.3);
       border: 1.5px solid rgba(232,182,79,0.4);
       border-radius: 10px;
       padding: 9px;
       cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .settings-close-btn:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 3px rgba(0,0,0,0.25);
     }
 
   </style>
