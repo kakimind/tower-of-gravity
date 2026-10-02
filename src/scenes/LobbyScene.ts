@@ -86,6 +86,16 @@ export class LobbyScene extends Phaser.Scene {
       stroke: '#0a0618', strokeThickness: 5,
     }).setOrigin(0.5);
 
+    // A couple of tiny twinkling sparkles on the currency pill, echoing the
+    // board's corner sigils, so the stardust reads as faintly magical
+    // rather than a plain number badge.
+    [[-58, -8, 2200], [56, 6, 1800]].forEach(([dx, dy, dur], i) => {
+      const sparkle = this.add.star(W / 2 + dx * S, 60 * S + dy * S, 4, 1 * S, 2.2 * S, 0xfff3c4, 0.8);
+      this.tweens.add({
+        targets: sparkle, alpha: 0.15, scale: 1.4, yoyo: true, repeat: -1, duration: dur, delay: i * 400, ease: 'Sine.easeInOut',
+      });
+    });
+
     this.heartsText = this.add.text(W / 2, 90 * S, '', {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
