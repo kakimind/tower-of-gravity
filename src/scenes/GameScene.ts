@@ -104,11 +104,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
+    // Every stage clear/restart re-runs preload(). Without this guard, each
+    // one re-queued all 10 textures under their existing keys — Phaser
+    // replaces the old GPU texture each time, and across many stages in a
+    // row that churn can exhaust GPU memory and lose the WebGL context
+    // (symptom: canvas renders as a solid color while game logic keeps
+    // running). Load once, like LobbyScene already does for its icons.
     for (let t = 0; t < CANDY_TYPE_COUNT; t++) {
+      if (this.textures.exists(candyTextureKey(t))) continue;
       const svg = buildCandySvg(t);
       this.load.svg(candyTextureKey(t), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
     }
     (['lineRow', 'lineCol', 'crossBomb', 'colorBomb'] as SpecialArtType[]).forEach((type) => {
+      if (this.textures.exists(specialTextureKey(type))) return;
       const svg = buildSpecialSvg(type);
       this.load.svg(specialTextureKey(type), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
     });

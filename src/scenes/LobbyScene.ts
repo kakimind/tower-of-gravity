@@ -179,21 +179,26 @@ export class LobbyScene extends Phaser.Scene {
     // slim, constant-width spire body (not a flared trapezoid) topped by a
     // conical roof that flares out wider than the body — matches the
     // Arcane Spire mockup silhouette instead of the old wide citadel.
-    const bodyW = 50 * S;
-    const bodyH = 136 * S;
+    // Sized up from the original proportions (baseY unchanged, so the
+    // plinth-to-button clearance below is untouched) now that consolidating
+    // the lobby's status rows into one bar freed vertical space above —
+    // the tower is meant to be the hero of this screen, not a small
+    // silhouette floating in empty starfield.
+    const bodyW = 56 * S;
+    const bodyH = 158 * S;
     const brimY = baseY - bodyH;
-    const roofHalfW = 31 * S;
-    const roofH = 40 * S;
+    const roofHalfW = 35 * S;
+    const roofH = 46 * S;
     const apexY = brimY - roofH;
-    const turretOffset = 62 * S;
-    const turretW = 22 * S;
-    const turretH = 82 * S;
+    const turretOffset = 68 * S;
+    const turretW = 25 * S;
+    const turretH = 94 * S;
 
     const moonG = this.add.graphics();
     moonG.fillStyle(0xfff3cf, 0.9);
-    moonG.fillCircle(cx + 78 * S, apexY + 16 * S, 16 * S);
+    moonG.fillCircle(cx + 78 * S, apexY + 16 * S, 19 * S);
     moonG.fillStyle(0x1a1330, 1);
-    moonG.fillCircle(cx + 85 * S, apexY + 11 * S, 16 * S);
+    moonG.fillCircle(cx + 86 * S, apexY + 10 * S, 19 * S);
     this.tweens.add({
       targets: moonG, alpha: 0.75, yoyo: true, repeat: -1, duration: 2200, ease: 'Sine.easeInOut',
     });
@@ -201,6 +206,22 @@ export class LobbyScene extends Phaser.Scene {
     const aura = this.add.circle(cx, (brimY + apexY) / 2, 110 * S, 0x9b6bff, 0.16);
     this.tweens.add({
       targets: aura, alpha: 0.26, scale: 1.08, yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.easeInOut',
+    });
+
+    // Ground mist at the tower's foot — stacked low-opacity ellipses that
+    // fade outward, so the plinth sits in atmospheric haze instead of
+    // meeting bare empty background.
+    // No explicit depth: like the rest of this scene's tower pieces, paint
+    // order follows creation order at the shared default depth (0), and
+    // this is created after the background/stars/moon but before the
+    // plinth, landing it exactly between them.
+    const mist = this.add.graphics();
+    [[260, 22, 0.1], [190, 16, 0.14], [130, 12, 0.18]].forEach(([w, h, a]) => {
+      mist.fillStyle(0xcbb8f0, a);
+      mist.fillEllipse(cx, baseY + 14 * S, w * S, h * S);
+    });
+    this.tweens.add({
+      targets: mist, alpha: 0.6, yoyo: true, repeat: -1, duration: 3200, ease: 'Sine.easeInOut',
     });
 
     // stone plinth / steps the tower stands on
