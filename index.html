@@ -211,13 +211,20 @@
 
     .tray {
       position: relative;
-      background: linear-gradient(180deg, #241a3f, #1a1330);
       border-radius: 20px;
       padding: 14px 16px 16px;
       box-shadow: 0 10px 0 #100b1f, 0 24px 36px var(--shadow-ink);
-      border: 4px solid var(--gold);
       width: 100%;
       box-sizing: border-box;
+      /* Faceted gold bezel instead of a flat border: a lighter-to-darker
+         gradient stroke around the panel's own fill, echoing the gem-cut
+         treatment used on every button/panel inside the canvas. */
+      border: 4px solid transparent;
+      background-image:
+        linear-gradient(180deg, #241a3f, #1a1330),
+        linear-gradient(180deg, #ffe9a8 0%, #e8b64f 35%, #a9823a 55%, #e8b64f 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
     }
 
     .tray::after {
