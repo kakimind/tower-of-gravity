@@ -15,5 +15,5 @@ android/local.properties
 # Claude Code local overrides (personal, not shared)
 .claude/settings.local.json
 
-# Codex review output (scratch, not source)
-codex-review.md
+# Codex CLI output (scratch, not source)
+codex-*.md
