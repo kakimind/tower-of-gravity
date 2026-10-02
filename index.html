@@ -138,10 +138,16 @@
       min-width: 0;
       max-width: calc(100% - 46px);
       overflow: hidden;
-      background: rgba(232, 182, 79, 0.1);
-      border: 1px solid rgba(232, 182, 79, 0.4);
       border-radius: 999px;
       padding: 5px 18px;
+      /* Same gradient-border bezel trick as .tray, scaled down for a
+         pill — a thin faceted gold ring instead of a flat hairline. */
+      border: 1.5px solid transparent;
+      background-image:
+        linear-gradient(rgba(232, 182, 79, 0.1), rgba(232, 182, 79, 0.1)),
+        linear-gradient(180deg, #ffe9a8 0%, #e8b64f 40%, #a9823a 60%, #e8b64f 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
     }
 
     .title-plaque h1 {
