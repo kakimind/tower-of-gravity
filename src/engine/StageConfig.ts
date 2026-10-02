@@ -8,9 +8,8 @@ export interface StageConfig {
   targetScore: number;
   movesLimit: number;
   gravityFlipInterval: number;
-  // Difficulty variety beyond "bigger numbers": fewer colors early on (an
-  // easier board to read), then locked/icy tiles layered in from floor 4
-  // onward as a second, independent axis of challenge.
+  // Difficulty variety beyond "bigger numbers": locked/icy tiles layered in
+  // from floor 4 onward as an independent axis of challenge.
   colorCount: number;
   lockCount: number;
   lockHp: number;
@@ -28,10 +27,10 @@ export function getStageConfig(stage: number): StageConfig {
   const movesLimit = 20 + Math.floor((s - 1) / 10) * 2;
   const gravityFlipInterval = Math.max(3, 6 - Math.floor((s - 1) / 200));
 
-  // Ease new players in with one fewer ingredient color on floor 1, then the
-  // full palette from floor 2 on — a short onboarding nudge, not a permanent
-  // cap. (Floor 1 originally dropped two colors; that read as too easy.)
-  const colorCount = floor === 1 ? CANDY_TYPE_COUNT - 1 : CANDY_TYPE_COUNT;
+  // Three-step ramp — floor 1: 5 colors, floor 2: 6, floor 3+: the full
+  // 7-color palette. (Floor 1 previously dropped to 4, which read as too
+  // easy with too much incidental cascading; 5 is the new floor.)
+  const colorCount = Math.min(CANDY_TYPE_COUNT, CANDY_TYPE_COUNT - Math.max(0, 3 - floor));
 
   // Locked (icy) tiles: inert overlays that don't block swaps or matches on
   // their own cell, but only thaw when a match clears a neighboring cell —

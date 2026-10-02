@@ -13,6 +13,7 @@ export const CANDY_PALETTES: CandyPalette[] = [
   { base: '#4fd06a', light: '#c9f7d3', dark: '#0f8f3c' }, // green — gem
   { base: '#3fa9ff', light: '#c2e6ff', dark: '#0b5fb8' }, // blue — swirl lollipop
   { base: '#c15fff', light: '#ecccff', dark: '#7a1fc9' }, // purple — star
+  { base: '#2ad6c9', light: '#c2fbf5', dark: '#0c8d82' }, // teal — heart
 ];
 
 function defs(id: string, p: CandyPalette): string {
@@ -170,7 +171,23 @@ function shapeStar(id: string, p: CandyPalette): string {
   `;
 }
 
-const SHAPE_FNS = [shapeDisc, shapePotion, shapeTeardrop, shapeGem, shapeSwirl, shapeStar];
+// 6: heart
+function shapeHeart(id: string, p: CandyPalette): string {
+  const c = ART_SIZE / 2;
+  const r = ART_SIZE * 0.3;
+  const path = `M ${c} ${c + r * 1.05}
+    C ${c - r * 1.6} ${c - r * 0.25}, ${c - r * 0.7} ${c - r * 1.5}, ${c} ${c - r * 0.55}
+    C ${c + r * 0.7} ${c - r * 1.5}, ${c + r * 1.6} ${c - r * 0.25}, ${c} ${c + r * 1.05}
+    Z`;
+  return `
+    <g filter="url(#shadow-${id})">
+      <path d="${path}" fill="url(#body-${id})" stroke="${p.dark}" stroke-width="2.5" stroke-linejoin="round" />
+      ${shine(c, r)}
+    </g>
+  `;
+}
+
+const SHAPE_FNS = [shapeDisc, shapePotion, shapeTeardrop, shapeGem, shapeSwirl, shapeStar, shapeHeart];
 
 export function buildCandySvg(typeIndex: number): string {
   const p = CANDY_PALETTES[typeIndex];
