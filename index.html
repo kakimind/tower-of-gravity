@@ -341,11 +341,19 @@
 
     .settings-panel {
       width: min(340px, 88vw);
-      background: linear-gradient(180deg, var(--night-800), var(--night-950));
-      border: 2px solid var(--parchment-edge);
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      /* Faceted gem-bezel border, same gradient-layer trick as .tray.
+         Safe here because the fill below is fully opaque (unlike the
+         translucent title-plaque/badge pills, where this trick let the
+         opaque border gradient show through the whole shape). */
+      border: 2px solid transparent;
+      background-image:
+        linear-gradient(180deg, var(--night-800), var(--night-950)),
+        linear-gradient(180deg, #ffe9a8 0%, #e8b64f 35%, #a9823a 55%, #e8b64f 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
     }
 
     .settings-panel h2 {
@@ -381,6 +389,8 @@
       padding: 8px 10px;
       border-radius: 8px;
       border: 1.5px solid rgba(232,182,79,0.5);
+      border-top-color: rgba(255,233,168,0.6);
+      border-bottom-color: rgba(169,130,58,0.55);
       background: var(--night-900);
       color: var(--parchment);
     }
