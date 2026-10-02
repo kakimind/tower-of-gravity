@@ -12,8 +12,9 @@ android/local.properties
 # IDE
 .idea/
 
-# Claude Code local overrides (personal, not shared)
+# Claude Code local overrides and session state (personal, not shared)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Codex CLI output (scratch, not source)
 codex-*.md

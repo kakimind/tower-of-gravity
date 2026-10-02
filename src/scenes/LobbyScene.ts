@@ -96,6 +96,15 @@ export class LobbyScene extends Phaser.Scene {
       });
     });
 
+    // Dark backing + thin gold rim behind the hearts row, matching the
+    // currency pill above it instead of leaving the hearts as bare text
+    // floating on the night sky.
+    const heartsPill = this.add.graphics();
+    heartsPill.fillStyle(0x150f26, 0.65);
+    heartsPill.lineStyle(1.5 * S, 0xe8b64f, 0.5);
+    heartsPill.fillRoundedRect(W / 2 - 95 * S, 80 * S, 190 * S, 22 * S, 11 * S);
+    heartsPill.strokeRoundedRect(W / 2 - 95 * S, 80 * S, 190 * S, 22 * S, 11 * S);
+
     this.heartsText = this.add.text(W / 2, 90 * S, '', {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
