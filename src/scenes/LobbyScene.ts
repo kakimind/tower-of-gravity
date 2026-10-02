@@ -65,6 +65,7 @@ export class LobbyScene extends Phaser.Scene {
     bg.fillGradientStyle(0x2c1f4a, 0x2c1f4a, 0x0f0a1c, 0x0f0a1c, 1);
     bg.fillRect(0, 0, W, H);
 
+    this.drawOrbitRings();
     this.drawStars();
     this.drawTower();
 
@@ -156,20 +157,60 @@ export class LobbyScene extends Phaser.Scene {
     void unlocked;
   }
 
+  // Two faint, slowly-counter-rotating rings of small dots behind the tower
+  // — a nod to the game's gravity theme (distant bodies in orbit) and a
+  // cheap way to give the background a sense of depth instead of a flat
+  // gradient. Drawn before the stars/tower so it sits furthest back.
+  private drawOrbitRing(
+    cx: number, cy: number, radius: number, count: number,
+    dotSize: number, alpha: number, duration: number, color: number, clockwise: boolean,
+  ): void {
+    const ring = this.add.container(cx, cy);
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const dot = this.add.circle(Math.cos(angle) * radius, Math.sin(angle) * radius, dotSize, color, alpha);
+      ring.add(dot);
+    }
+    this.tweens.add({
+      targets: ring, angle: clockwise ? 360 : -360, duration, repeat: -1, ease: 'Linear',
+    });
+  }
+
+  private drawOrbitRings(): void {
+    const cx = W / 2;
+    const cy = 380 * S;
+    this.drawOrbitRing(cx, cy, 280 * S, 14, 1.3 * S, 0.18, 70000, 0x9b6bff, true);
+    this.drawOrbitRing(cx, cy, 210 * S, 10, 1.1 * S, 0.24, 48000, 0xe8b64f, false);
+  }
+
   private drawStars(): void {
-    const g = this.add.graphics();
-    const positions: [number, number, number][] = [
+    // Two depth tiers — small/dim "far" stars and a few larger/brighter
+    // "near" ones — instead of a single flat layer, so the sky reads with
+    // some parallax depth even though nothing actually moves horizontally.
+    const far: [number, number][] = [
+      [20 * S, 60 * S], [70 * S, 140 * S], [16 * S, 260 * S], [52 * S, 380 * S],
+      [W - 18 * S, 130 * S], [W - 66 * S, 260 * S], [W - 20 * S, 380 * S], [W - 46 * S, 60 * S],
+      [120 * S, 30 * S], [W - 110 * S, 40 * S], [34 * S, 470 * S], [W - 36 * S, 470 * S],
+    ];
+    far.forEach(([x, y]) => {
+      const star = this.add.circle(x, y, 0.7 * S, 0xffffff, 0.45);
+      this.tweens.add({
+        targets: star, alpha: 0.1, yoyo: true, repeat: -1, duration: 1100 + Math.random() * 900,
+        delay: Math.random() * 900,
+      });
+    });
+
+    const near: [number, number, number][] = [
       [30 * S, 100 * S, 1.5 * S], [60 * S, 200 * S, S], [W - 40 * S, 90 * S, 1.3 * S], [W - 30 * S, 220 * S, S],
       [24 * S, 320 * S, 1.2 * S], [W - 24 * S, 340 * S, 1.4 * S], [40 * S, 420 * S, S], [W - 50 * S, 440 * S, 1.2 * S],
     ];
-    positions.forEach(([x, y, r]) => {
+    near.forEach(([x, y, r]) => {
       const star = this.add.circle(x, y, r, 0xffffff, 0.8);
       this.tweens.add({
         targets: star, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + Math.random() * 900,
         delay: Math.random() * 800,
       });
     });
-    void g;
   }
 
   private drawTower(): void {
