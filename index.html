@@ -140,14 +140,15 @@
       overflow: hidden;
       border-radius: 999px;
       padding: 5px 18px;
-      /* Same gradient-border bezel trick as .tray, scaled down for a
-         pill — a thin faceted gold ring instead of a flat hairline. */
-      border: 1.5px solid transparent;
-      background-image:
-        linear-gradient(rgba(232, 182, 79, 0.1), rgba(232, 182, 79, 0.1)),
-        linear-gradient(180deg, #ffe9a8 0%, #e8b64f 40%, #a9823a 60%, #e8b64f 100%);
-      background-origin: border-box;
-      background-clip: padding-box, border-box;
+      background: rgba(232, 182, 79, 0.1);
+      /* Faceted bevel via differential border-edge color (lighter top,
+         darker bottom) instead of a flat ring — the double-background-
+         layer gradient trick used on the opaque .tray doesn't work here
+         since this pill's fill is translucent and would let the opaque
+         border gradient show through the whole pill, not just its edge. */
+      border: 1.5px solid #e8b64f;
+      border-top-color: #ffe9a8;
+      border-bottom-color: #a9823a;
     }
 
     .title-plaque h1 {
@@ -178,9 +179,14 @@
       gap: 2px;
       padding: 8px 4px 9px;
       min-width: 0;
-      background: rgba(232, 182, 79, 0.1);
-      border: 1px solid rgba(232, 182, 79, 0.3);
       border-radius: 10px;
+      background: rgba(232, 182, 79, 0.1);
+      /* Same differential-border-color bevel as .title-plaque (see note
+         there on why the gradient-background trick doesn't suit a
+         translucent fill), kept subtle since four of these sit in a row. */
+      border: 1px solid rgba(232, 182, 79, 0.45);
+      border-top-color: rgba(255, 233, 168, 0.55);
+      border-bottom-color: rgba(169, 130, 58, 0.5);
     }
 
     .badge .icon {
