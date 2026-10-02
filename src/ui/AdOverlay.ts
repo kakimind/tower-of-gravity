@@ -11,7 +11,11 @@ const S = UI_SCALE;
 // treatment used everywhere else. One shared implementation instead of a
 // fourth copy.
 export function playMockAd(scene: Phaser.Scene, cx: number, cy: number, onComplete: () => void): void {
-  const overlay = scene.add.rectangle(cx, cy, scene.scale.width, scene.scale.height, 0x000000, 0.82).setDepth(60);
+  // Interactive so taps on whatever's underneath (Ascend, Shop, board tiles)
+  // don't go through while the "ad" is playing — without this, a player
+  // could navigate away mid-countdown and the pending reward callback would
+  // simply never fire once the scene it belongs to stops.
+  const overlay = scene.add.rectangle(cx, cy, scene.scale.width, scene.scale.height, 0x000000, 0.82).setDepth(60).setInteractive();
   const panel = drawPanel(scene, cx, cy, 160 * S, 110 * S, {
     fillColor: 0x241a3f, strokeColor: 0xe8b64f, strokeAlpha: 0.9, radius: 16 * S, strokeWidth: 2 * S, depth: 61,
   });

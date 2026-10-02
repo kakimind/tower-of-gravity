@@ -1412,7 +1412,11 @@ export class GameScene extends Phaser.Scene {
       if (onAction) {
         btn.on('pointerdown', onAction);
       } else {
+        // The final stage (1000/1000) has no "next stage" to advance to, so
+        // this becomes a label rather than a button — dim it so it doesn't
+        // read as a dead, still-clickable-looking gold pill.
         btn.disableInteractive();
+        btn.setAlpha(0.6);
       }
       children.push(btn);
     }
