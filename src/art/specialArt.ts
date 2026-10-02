@@ -8,7 +8,7 @@ interface SpecialTheme {
   dark: string;
 }
 
-const THEMES: Record<SpecialArtType, SpecialTheme> = {
+export const SPECIAL_THEMES: Record<SpecialArtType, SpecialTheme> = {
   lineRow: { glow: '#ffd76a', light: '#fff3cf', dark: '#a87310' },
   lineCol: { glow: '#7fd8ff', light: '#dff5ff', dark: '#106a94' },
   crossBomb: { glow: '#7effa0', light: '#dcffe6', dark: '#1a8a4a' },
@@ -60,7 +60,7 @@ function frame(id: string, theme: SpecialTheme, body: string, beforeTile = ''): 
 
 function buildLineRow(): string {
   const c = ART_SIZE / 2;
-  const theme = THEMES.lineRow;
+  const theme = SPECIAL_THEMES.lineRow;
   const id = 'row';
   const beforeTile = `
     <rect x="0" y="${c - 5}" width="${ART_SIZE}" height="10" fill="url(#beam-${id})" opacity="0.9" />
@@ -77,7 +77,7 @@ function buildLineRow(): string {
 
 function buildLineCol(): string {
   const c = ART_SIZE / 2;
-  const theme = THEMES.lineCol;
+  const theme = SPECIAL_THEMES.lineCol;
   const id = 'col';
   const beforeTile = `
     <rect x="${c - 5}" y="0" width="10" height="${ART_SIZE}" fill="url(#beam-${id})" opacity="0.9" transform="rotate(90 ${c} ${c})" />
@@ -96,7 +96,7 @@ function buildLineCol(): string {
 
 function buildCrossBomb(): string {
   const c = ART_SIZE / 2;
-  const theme = THEMES.crossBomb;
+  const theme = SPECIAL_THEMES.crossBomb;
   const id = 'cross';
   const beforeTile = `
     <rect x="0" y="${c - 5}" width="${ART_SIZE}" height="10" fill="url(#beam-${id})" opacity="0.85" />
@@ -118,7 +118,7 @@ function buildCrossBomb(): string {
 
 function buildColorBomb(): string {
   const c = ART_SIZE / 2;
-  const theme = THEMES.colorBomb;
+  const theme = SPECIAL_THEMES.colorBomb;
   const id = 'bomb';
   const orbitColors = ['#ff4d5e', '#4fd06a', '#3fa9ff', '#ffd93c', '#c15fff'];
   let orbits = '';

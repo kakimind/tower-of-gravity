@@ -6,7 +6,7 @@ import {
   trySpendCurrency, getBoosts, addBonusMovesBoost, addSpecialBoost,
   getHearts, addHearts, getMsUntilNextHeart, HEART_MAX,
 } from '../engine/Progress';
-import { buildSpecialSvg, specialTextureKey, SpecialArtType } from '../art/specialArt';
+import { buildSpecialSvg, specialTextureKey, SpecialArtType, SPECIAL_THEMES } from '../art/specialArt';
 import { svgToDataUri } from '../art/candyArt';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
@@ -466,7 +466,7 @@ export class LobbyScene extends Phaser.Scene {
     }).setOrigin(0.5);
     children.push(title);
 
-    const rowGap = 36 * S;
+    const rowGap = 38 * S;
     let rowY = cy - 122 * S;
 
     const rowMoves = this.buildShopRow(cx, rowY, t('lobby.shopMovesLabel'), t('lobby.priceStardust', { n: 40 }), () => {
@@ -482,10 +482,6 @@ export class LobbyScene extends Phaser.Scene {
 
     SPECIAL_SHOP_ITEMS.forEach((item) => {
       const thisRowY = rowY;
-      const icon = this.add.image(cx - 167 * S, thisRowY, specialTextureKey(item.type));
-      icon.setDisplaySize(28 * S, 28 * S);
-      children.push(icon);
-
       const row = this.buildShopRow(cx, thisRowY, t(item.labelKey), t('lobby.priceStardust', { n: item.price }), () => {
         if (trySpendCurrency(item.price)) {
           addSpecialBoost(item.type);
@@ -493,7 +489,7 @@ export class LobbyScene extends Phaser.Scene {
         } else {
           this.flashInsufficient(cx, thisRowY + 18 * S);
         }
-      });
+      }, { textureKey: specialTextureKey(item.type), glowColor: SPECIAL_THEMES[item.type].glow });
       children.push(...row);
       rowY += rowGap;
     });
@@ -514,16 +510,54 @@ export class LobbyScene extends Phaser.Scene {
     this.shopGroup = this.add.container(0, 0, children).setDepth(50);
   }
 
-  private buildShopRow(cx: number, cy: number, label: string, price: string, onBuy: () => void): Phaser.GameObjects.GameObject[] {
-    const labelText = this.add.text(cx - 150 * S, cy, label, {
+  private buildShopRow(
+    cx: number, cy: number, label: string, price: string, onBuy: () => void,
+    icon?: { textureKey: string; glowColor: string },
+  ): Phaser.GameObjects.GameObject[] {
+    const items: Phaser.GameObjects.GameObject[] = [];
+
+    // Slot card behind the row: a soft dark backing with a thin gold divider
+    // along the bottom, so the shop reads as a stacked list of distinct
+    // item slots instead of bare text/button pairs floating on the panel.
+    const rowW = 332 * S;
+    const rowH = 28 * S;
+    const card = this.add.graphics();
+    card.fillStyle(0x1c1330, 0.35);
+    card.fillRoundedRect(cx - rowW / 2, cy - rowH / 2, rowW, rowH, 8 * S);
+    card.lineStyle(S, 0xe8b64f, 0.16);
+    card.lineBetween(cx - rowW / 2 + 12 * S, cy + rowH / 2, cx + rowW / 2 - 12 * S, cy + rowH / 2);
+    items.push(card);
+
+    const labelX = icon ? cx - 132 * S : cx - 150 * S;
+
+    if (icon) {
+      const glowColor = Phaser.Display.Color.HexStringToColor(icon.glowColor).color;
+      const glow = this.add.circle(cx - 167 * S, cy, 17 * S, glowColor, 0.22);
+      const glowTween = this.tweens.add({
+        targets: glow, alpha: 0.08, scale: 1.15, yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.easeInOut',
+      });
+      // The shop panel is rebuilt from scratch on every open (toggleShop ->
+      // buildShop), so these infinite repeat:-1 tweens would otherwise pile
+      // up across opens instead of stopping with the glow they animate.
+      glow.once(Phaser.GameObjects.Events.DESTROY, () => glowTween.remove());
+      const iconImg = this.add.image(cx - 167 * S, cy, icon.textureKey);
+      iconImg.setDisplaySize(28 * S, 28 * S);
+      items.push(glow, iconImg);
+    }
+
+    const labelText = this.add.text(labelX, cy, label, {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, fontStyle: '700', color: '#f3e6c8',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0, 0.5);
+    items.push(labelText);
+
     const buyBtn = createPillButton(this, cx + 150 * S, cy, price, {
       fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 12 * S, paddingY: 7 * S,
     });
     buyBtn.on('pointerdown', onBuy);
-    return [labelText, buyBtn];
+    items.push(buyBtn);
+
+    return items;
   }
 
   private flashInsufficient(x: number, y: number): void {
