@@ -82,18 +82,33 @@ export class LobbyScene extends Phaser.Scene {
     // thin divider) instead of three separately-stacked pills — frees the
     // vertical space previously spent on stacked status rows so the tower
     // illustration below can take over as the actual hero of the screen.
+    //
+    // Width is measured from the actual currency string rather than a fixed
+    // offset: other languages (e.g. "522 Stardust" vs "522 별가루") run
+    // noticeably longer than Korean and were overflowing past the divider
+    // into the hearts segment at the old fixed layout.
     const statusTop = 34 * S;
     const statusH = 30 * S;
+    const currencyStr = t('lobby.currency', { n: getCurrency() });
+    const measure = this.add.text(0, 0, currencyStr, { fontFamily: 'Cinzel Decorative, serif', fontSize: `${13 * S}px` });
+    const currencySegW = Math.max(110 * S, measure.width + 36 * S);
+    measure.destroy();
+    const heartsSegW = 150 * S;
+    const totalW = currencySegW + heartsSegW;
+    const pillLeft = W / 2 - totalW / 2;
+    const dividerX = pillLeft + currencySegW;
+
     const statusPill = this.add.graphics();
     statusPill.fillStyle(0x150f26, 0.85);
     statusPill.lineStyle(2 * S, 0xe8b64f, 0.9);
-    statusPill.fillRoundedRect(W / 2 - 110 * S, statusTop, 220 * S, statusH, 15 * S);
-    statusPill.strokeRoundedRect(W / 2 - 110 * S, statusTop, 220 * S, statusH, 15 * S);
+    statusPill.fillRoundedRect(pillLeft, statusTop, totalW, statusH, 15 * S);
+    statusPill.strokeRoundedRect(pillLeft, statusTop, totalW, statusH, 15 * S);
     statusPill.lineStyle(1.5 * S, 0xe8b64f, 0.35);
-    statusPill.lineBetween(W / 2, statusTop + 6 * S, W / 2, statusTop + statusH - 6 * S);
+    statusPill.lineBetween(dividerX, statusTop + 6 * S, dividerX, statusTop + statusH - 6 * S);
 
     const statusCenterY = statusTop + statusH / 2;
-    this.currencyText = this.add.text(W / 2 - 55 * S, statusCenterY, t('lobby.currency', { n: getCurrency() }), {
+    const currencyX = pillLeft + currencySegW / 2;
+    this.currencyText = this.add.text(currencyX, statusCenterY, currencyStr, {
       fontFamily: 'Cinzel Decorative, serif', fontSize: `${13 * S}px`, color: '#fff3c4',
       stroke: '#0a0618', strokeThickness: 4 * S,
     }).setOrigin(0.5);
@@ -102,13 +117,13 @@ export class LobbyScene extends Phaser.Scene {
     // the board's corner sigils, so the stardust reads as faintly magical
     // rather than a plain number.
     [[-48, -7, 2200], [45, 6, 1800]].forEach(([dx, dy, dur], i) => {
-      const sparkle = this.add.star(W / 2 - 55 * S + dx * S, statusCenterY + dy * S, 4, 0.9 * S, 2 * S, 0xfff3c4, 0.8);
+      const sparkle = this.add.star(currencyX + dx * S, statusCenterY + dy * S, 4, 0.9 * S, 2 * S, 0xfff3c4, 0.8);
       this.tweens.add({
         targets: sparkle, alpha: 0.15, scale: 1.4, yoyo: true, repeat: -1, duration: dur, delay: i * 400, ease: 'Sine.easeInOut',
       });
     });
 
-    this.heartsText = this.add.text(W / 2 + 58 * S, statusCenterY, '', {
+    this.heartsText = this.add.text(dividerX + heartsSegW / 2, statusCenterY, '', {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0.5);
@@ -179,8 +194,8 @@ export class LobbyScene extends Phaser.Scene {
   private drawOrbitRings(): void {
     const cx = W / 2;
     const cy = 380 * S;
-    this.drawOrbitRing(cx, cy, 280 * S, 14, 1.3 * S, 0.18, 70000, 0x9b6bff, true);
-    this.drawOrbitRing(cx, cy, 210 * S, 10, 1.1 * S, 0.24, 48000, 0xe8b64f, false);
+    this.drawOrbitRing(cx, cy, 280 * S, 14, 1.8 * S, 0.42, 70000, 0x9b6bff, true);
+    this.drawOrbitRing(cx, cy, 210 * S, 10, 1.6 * S, 0.48, 48000, 0xe8b64f, false);
   }
 
   private drawStars(): void {

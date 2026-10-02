@@ -42,6 +42,34 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 initSettingsPanel();
 
+// The Scale Manager measures the canvas's on-screen position once, during
+// Game construction, and only recomputes it on a window 'resize' event. On
+// this page the layout settles a few pixels away from that first synchronous
+// measurement (the surrounding card reflows after construction), and nothing
+// ever fires a resize to correct it — so every pointer coordinate Phaser
+// computes stays permanently off by that amount, silently missing hit areas
+// near the canvas edges. Watch the canvas's actual position for the first
+// couple of seconds after load and re-sync the Scale Manager whenever it
+// moves, rather than guessing which specific layout change is responsible.
+// Polled with setTimeout rather than requestAnimationFrame so the check
+// still runs if the tab loads in the background (rAF is suspended there).
+{
+  let lastX = -1;
+  let lastY = -1;
+  let checks = 0;
+  const watch = () => {
+    const rect = document.querySelector('canvas')?.getBoundingClientRect();
+    if (rect && (rect.x !== lastX || rect.y !== lastY)) {
+      lastX = rect.x;
+      lastY = rect.y;
+      game.scale.refresh();
+    }
+    checks++;
+    if (checks < 40) setTimeout(watch, 50);
+  };
+  watch();
+}
+
 if (import.meta.env.DEV) {
   (window as unknown as { __game: Phaser.Game }).__game = game;
 }
