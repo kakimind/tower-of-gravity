@@ -260,8 +260,9 @@ export class GameScene extends Phaser.Scene {
     const cy = GRID_SIZE * TILE / 2;
 
     const dim = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.5).setDepth(35);
-    const cardBg = this.add.rectangle(cx, cy - 10 * S, 168 * S, 168 * S, 0x241a3f, 1)
-      .setStrokeStyle(3 * S, 0xe8b64f, 0.9).setDepth(36).setScale(0.4).setAlpha(0);
+    const cardBg = drawPanel(this, cx, cy - 10 * S, 168 * S, 168 * S, {
+      strokeAlpha: 0.9, strokeWidth: 3 * S, radius: 20 * S, depth: 36,
+    }).setScale(0.4).setAlpha(0);
     const icon = this.add.image(cx, cy - 24 * S, specialTextureKey(type)).setDepth(37).setScale(0);
     icon.setDisplaySize(96 * S, 96 * S);
     const label = this.add.text(cx, cy + 92 * S, t('placement.instruction'), {
