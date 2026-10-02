@@ -1173,26 +1173,39 @@ export class GameScene extends Phaser.Scene {
   private showOutOfMovesOptions(): void {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
+    const panelH = 190 * S;
 
     const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.72).setDepth(30);
-    this.endText = this.add.text(cx, cy - 66 * S, t('outOfMoves.title'), {
+    const panel = drawPanel(this, cx, cy, GRID_SIZE * TILE - 56 * S, panelH, {
+      fillColor: 0x241a3f, strokeColor: 0xff8080, strokeAlpha: 0.9,
+      radius: 18 * S, strokeWidth: 2 * S, depth: 31,
+    });
+
+    this.endText = this.add.text(cx, cy - panelH / 2 + 44 * S, t('outOfMoves.title'), {
       fontFamily: 'Cinzel Decorative, serif',
-      fontSize: `${22 * S}px`,
+      fontSize: `${20 * S}px`,
       color: '#ff8080',
       stroke: '#150f26',
       strokeThickness: 5 * S,
-    }).setOrigin(0.5).setDepth(31);
+    }).setOrigin(0.5).setDepth(32);
 
-    const adBtn = createPillButton(this, cx, cy - 12 * S, t('outOfMoves.watchAd'), {
-      fontSize: `${15 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 31,
+    const adBtn = createPillButton(this, cx, cy - 6 * S, t('outOfMoves.watchAd'), {
+      fontSize: `${15 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 32,
     });
 
-    const leaveBtn = createPillButton(this, cx, cy + 40 * S, t('outOfMoves.leave'), {
+    const leaveBtn = createPillButton(this, cx, cy + panelH / 2 - 36 * S, t('outOfMoves.leave'), {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, textColor: '#c9b8e0',
-      bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 7 * S, depth: 31,
+      bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 7 * S, depth: 32,
     });
 
-    const group = this.add.container(0, 0, [overlay, this.endText, adBtn, leaveBtn]).setDepth(30);
+    const group = this.add.container(0, 0, [overlay, panel, this.endText, adBtn, leaveBtn]).setDepth(30);
+    // Fade only, not scale: every child keeps its absolute grid coordinate
+    // (so the overlay still covers the whole board, and the panel its own
+    // bounds) rather than a container-local one, so scaling the container
+    // from its (0,0) origin would visibly shift the dialog toward the
+    // top-left corner instead of growing from its own center.
+    group.setAlpha(0);
+    this.tweens.add({ targets: group, alpha: 1, duration: 180, ease: 'Sine.easeOut' });
 
     adBtn.on('pointerdown', () => {
       group.destroy(true);
@@ -1307,23 +1320,34 @@ export class GameScene extends Phaser.Scene {
   private showEndBanner(msg: string, color: string, actionLabel?: string, onAction?: () => void): void {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
+    const panelH = actionLabel ? 220 * S : 170 * S;
 
+    // A dim overlay with a floating text was the only moment in the game
+    // left without the gem-panel treatment used everywhere else (shop,
+    // confirm dialogs, placement cards) — the single biggest beat in a run
+    // (clearing or failing a stage) deserves the same framing, not less.
     const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.72).setDepth(30);
-    this.endText = this.add.text(cx, cy - 40 * S, msg, {
+    const panel = drawPanel(this, cx, cy, GRID_SIZE * TILE - 56 * S, panelH, {
+      fillColor: 0x241a3f, strokeColor: Phaser.Display.Color.ValueToColor(color).color, strokeAlpha: 0.9,
+      radius: 18 * S, strokeWidth: 2 * S, depth: 31,
+    });
+
+    this.endText = this.add.text(cx, cy - panelH / 2 + 44 * S, msg, {
       fontFamily: 'Cinzel Decorative, serif',
-      fontSize: `${22 * S}px`,
+      fontSize: `${20 * S}px`,
       color,
       stroke: '#150f26',
       strokeThickness: 5 * S,
       align: 'center',
-      wordWrap: { width: GRID_SIZE * TILE - 40 * S },
-    }).setOrigin(0.5).setDepth(31);
+      wordWrap: { width: GRID_SIZE * TILE - 96 * S },
+      lineSpacing: 6 * S,
+    }).setOrigin(0.5).setDepth(32);
 
-    const children: Phaser.GameObjects.GameObject[] = [overlay, this.endText];
+    const children: Phaser.GameObjects.GameObject[] = [overlay, panel, this.endText];
 
     if (actionLabel) {
-      const btn = createPillButton(this, cx, cy + 30 * S, actionLabel, {
-        fontSize: `${16 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 31,
+      const btn = createPillButton(this, cx, cy + 18 * S, actionLabel, {
+        fontSize: `${16 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 32,
       });
       if (onAction) {
         btn.on('pointerdown', onAction);
@@ -1333,13 +1357,17 @@ export class GameScene extends Phaser.Scene {
       children.push(btn);
     }
 
-    const lobbyBtn = createPillButton(this, cx, cy + 78 * S, t('endBanner.backToLobby'), {
+    const lobbyBtn = createPillButton(this, cx, cy + panelH / 2 - 36 * S, t('endBanner.backToLobby'), {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, textColor: '#c9b8e0',
-      bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 6 * S, depth: 31,
+      bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 6 * S, depth: 32,
     });
     lobbyBtn.on('pointerdown', () => this.scene.start('LobbyScene'));
     children.push(lobbyBtn);
 
-    this.add.container(0, 0, children).setDepth(30);
+    const group = this.add.container(0, 0, children).setDepth(30);
+    // Fade only — see the matching comment in showOutOfMovesOptions for why
+    // scaling this container isn't safe (children keep absolute coordinates).
+    group.setAlpha(0);
+    this.tweens.add({ targets: group, alpha: 1, duration: 180, ease: 'Sine.easeOut' });
   }
 }
