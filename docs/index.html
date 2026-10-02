@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>중력의 탑 — Tower of Gravity</title>
+<meta name="description" content="중력이 뒤집히는 매치-3, 중력의 탑. 1000개의 스테이지, 100개의 층, 4종 특수 재료와 다섯 안내자가 함께합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗼</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night-950: #150f26;
+    --night-900: #1e1638;
+    --night-800: #2c1f4a;
+    --night-700: #382753;
+    --parchment: #f3e6c8;
+    --parchment-dim: #c9bce0;
+    --ink: #0a0618;
+    --gold: #e8b64f;
+    --gold-bright: #ffe9a8;
+    --gold-dark: #a9823a;
+    --violet: #9b6bff;
+    --violet-dim: #6b4fc2;
+    --rule: rgba(232, 182, 79, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(ellipse 640px 420px at 50% -8%, rgba(155,107,255,0.22) 0%, rgba(155,107,255,0) 70%),
+      radial-gradient(circle 2px at 12% 18%, #fff 0%, transparent 100%),
+      radial-gradient(circle 1.5px at 24% 42%, #fff 0%, transparent 100%),
+      radial-gradient(circle 2px at 82% 14%, #fff 0%, transparent 100%),
+      radial-gradient(circle 1.5px at 90% 38%, #fff 0%, transparent 100%),
+      radial-gradient(circle 1.5px at 68% 8%, #fff 0%, transparent 100%),
+      radial-gradient(circle 2px at 8% 70%, #fff 0%, transparent 100%),
+      radial-gradient(circle 1.5px at 94% 68%, #fff 0%, transparent 100%),
+      radial-gradient(circle 1.5px at 55% 85%, #fff 0%, transparent 100%),
+      linear-gradient(180deg, var(--night-950) 0%, var(--night-900) 55%, var(--night-800) 100%);
+    background-attachment: fixed;
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--violet); color: var(--ink); }
+
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { color: var(--gold-bright); }
+
+  h1, h2, h3, .display {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--gold);
+    text-wrap: balance;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.6rem; }
+
+  /* ---------------- nav ---------------- */
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(10px);
+    background: rgba(21, 15, 38, 0.7);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav-row { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 0; }
+  .brand {
+    display: flex; align-items: center; gap: 0.55rem;
+    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 1.05rem;
+    color: var(--parchment); letter-spacing: 0.01em;
+  }
+  .nav-links { display: flex; gap: 1.8rem; font-size: 0.86rem; color: var(--parchment-dim); }
+  .nav-links a { color: var(--parchment-dim); }
+  .nav-links a:hover { color: var(--gold-bright); }
+  @media (max-width: 760px) { .nav-links { display: none; } }
+
+  /* ---------------- buttons ---------------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    padding: 0.8rem 1.7rem; border-radius: 999px;
+    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 0.88rem;
+    border: none; cursor: default;
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 45%, var(--gold-dark) 100%);
+    color: var(--ink);
+    box-shadow: 0 10px 24px -8px rgba(232,182,79,0.45), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-ghost {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 0.95rem;
+    color: var(--parchment); border: 1.5px solid var(--rule);
+    background: rgba(232,182,79,0.06);
+  }
+  .btn-ghost:hover { background: rgba(232,182,79,0.12); color: var(--gold-bright); }
+
+  /* ---------------- hero ---------------- */
+  .hero { padding: 4.5rem 0 5.5rem; }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 3rem; align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.6em;
+    font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 0.82rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet);
+    margin-bottom: 1.1rem;
+  }
+  .eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--violet); display: inline-block; }
+
+  h1.headline {
+    font-size: clamp(2.3rem, 4.6vw, 3.3rem);
+    line-height: 1.22; margin: 0 0 1.1rem;
+  }
+  h1.headline .accent { color: var(--gold-bright); }
+
+  .hero-sub {
+    font-size: 1.1rem; color: var(--parchment-dim); max-width: 36rem; margin: 0 0 2rem;
+  }
+
+  .cta-row { display: flex; gap: 0.9rem; flex-wrap: wrap; align-items: center; margin-bottom: 2.2rem; }
+
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, auto);
+    gap: 1.6rem 2.2rem;
+  }
+  @media (max-width: 560px) { .stat-row { grid-template-columns: repeat(2, auto); } }
+  .stat-row div { font-family: 'Cormorant Garamond', serif; font-size: 0.74rem; color: var(--parchment-dim); letter-spacing: 0.02em; }
+  .stat-row b { display: block; font-family: 'Cinzel Decorative', serif; font-size: 1.3rem; color: var(--gold); margin-bottom: 0.15rem; }
+
+  /* phone / bezel mockup, matching the game's own gem-cut tray */
+  .phone-stage { display: flex; justify-content: center; position: relative; }
+  .phone-glow {
+    position: absolute; width: 20rem; height: 20rem; border-radius: 50%;
+    background: radial-gradient(circle, rgba(155,107,255,0.3), transparent 70%);
+    filter: blur(6px); z-index: -1;
+  }
+  .phone-bezel {
+    width: min(100%, 250px);
+    border-radius: 26px;
+    padding: 10px;
+    border: 3px solid transparent;
+    background-image:
+      linear-gradient(180deg, #241a3f, #1a1330),
+      linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 35%, var(--gold-dark) 55%, var(--gold) 100%);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  }
+  .phone-bezel img {
+    display: block; width: 100%; border-radius: 16px;
+  }
+
+  /* ---------------- section heads ---------------- */
+  .section-head { text-align: center; max-width: 34rem; margin: 0 auto 2.8rem; }
+  .section-head .eyebrow { justify-content: center; }
+  .section-head .eyebrow::before { display: none; }
+  .section-head h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 0.7rem; }
+  .section-head p { color: var(--parchment-dim); font-size: 0.98rem; margin: 0; }
+
+  /* ---------------- gem panel (shared card look) ---------------- */
+  .panel {
+    border-radius: 18px;
+    border: 1.5px solid var(--rule);
+    background: linear-gradient(180deg, rgba(58,42,92,0.4), rgba(26,19,48,0.6));
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+    background: rgba(255,255,255,0.14);
+  }
+
+  /* ---------------- features ---------------- */
+  .features { padding: 2rem 0 5.5rem; }
+  .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+  @media (max-width: 920px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .feature-grid { grid-template-columns: 1fr; } }
+  .feature-card { padding: 1.8rem 1.5rem; }
+  .feature-card .icon { font-size: 1.7rem; margin-bottom: 0.9rem; display: block; }
+  .feature-card h3 { font-family: 'Cinzel Decorative', serif; font-size: 1.02rem; color: var(--gold-bright); margin: 0 0 0.6rem; }
+  .feature-card p { font-size: 0.92rem; color: var(--parchment-dim); margin: 0; }
+
+  /* ---------------- guides ---------------- */
+  .guides { padding: 2rem 0 5.5rem; }
+  .guide-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+  @media (max-width: 920px) { .guide-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .guide-grid { grid-template-columns: repeat(2, 1fr); } }
+  .guide-card { padding: 1.5rem 1.1rem; text-align: center; }
+  .guide-avatar {
+    width: 3rem; height: 3rem; border-radius: 50%; margin: 0 auto 0.9rem;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    background: radial-gradient(circle at 35% 30%, var(--violet), var(--night-800) 75%);
+    border: 1px solid var(--rule);
+  }
+  .guide-card h3 { font-family: 'Cinzel Decorative', serif; font-size: 0.86rem; color: var(--gold-bright); margin: 0 0 0.3rem; line-height: 1.3; }
+  .guide-floor { font-size: 0.72rem; color: var(--violet); letter-spacing: 0.04em; margin-bottom: 0.6rem; display: block; }
+  .guide-card p { font-size: 0.82rem; color: var(--parchment-dim); margin: 0; }
+
+  /* ---------------- steps ---------------- */
+  .steps { padding: 2rem 0 5.5rem; }
+  .step-list { max-width: 42rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid; grid-template-columns: 2.6rem 1fr; gap: 1.2rem;
+    padding: 1.3rem 0; border-top: 1px solid var(--rule);
+  }
+  .step:first-child { border-top: none; }
+  .step-n {
+    font-family: 'Cinzel Decorative', serif; font-size: 1.3rem; color: var(--gold);
+    display: flex; align-items: flex-start; justify-content: center; padding-top: 0.1rem;
+  }
+  .step h3 { font-family: 'Cinzel Decorative', serif; font-size: 1rem; color: var(--parchment); margin: 0 0 0.35rem; }
+  .step p { font-size: 0.92rem; color: var(--parchment-dim); margin: 0; }
+
+  /* ---------------- final cta ---------------- */
+  .final-cta { padding: 1rem 0 6rem; }
+  .cta-panel {
+    text-align: center; padding: 3.2rem 2rem; border-radius: 24px;
+    background: radial-gradient(ellipse 620px 360px at 50% 0%, rgba(155,107,255,0.25), transparent 65%), var(--night-900);
+    border: 1.5px solid var(--rule);
+  }
+  .cta-panel h2 { margin: 0 0 0.9rem; }
+  .cta-panel p { color: var(--parchment-dim); max-width: 32rem; margin: 0 auto 1.8rem; }
+
+  /* ---------------- footer ---------------- */
+  footer { border-top: 1px solid var(--rule); padding: 2.2rem 0; }
+  .foot-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .foot-links { display: flex; gap: 1.5rem; font-size: 0.82rem; }
+  .foot-links a { color: var(--parchment-dim); }
+  .foot-links a:hover { color: var(--gold-bright); }
+  .copyright { font-size: 0.78rem; color: var(--parchment-dim); opacity: 0.75; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-row">
+    <div class="brand">🗼 중력의 탑</div>
+    <div class="nav-links">
+      <a href="#features">특징</a>
+      <a href="#guides">안내자들</a>
+      <a href="#steps">오르는 법</a>
+      <a href="privacy.html">개인정보처리방침</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">모바일 매치-3 · 출시 준비 중</div>
+      <h1 class="headline">중력을 거슬러,<br><span class="accent">탑 끝까지</span> 오르다</h1>
+      <p class="hero-sub">재료를 밀어 맞추는 손맛 좋은 매치-3에 중력 반전이라는 변수를 더했습니다. 6수마다 중력이 뒤집히며 보드가 다시 쏟아지는 1000개의 스테이지를 올라 보세요.</p>
+      <div class="cta-row">
+        <span class="btn btn-primary">📱 Android 출시 준비 중</span>
+        <a class="btn btn-ghost" href="#features">더 알아보기</a>
+      </div>
+      <div class="stat-row">
+        <div><b>1000</b>스테이지</div>
+        <div><b>100</b>층</div>
+        <div><b>4종</b>특수 재료</div>
+        <div><b>6수</b>마다 중력 반전</div>
+      </div>
+    </div>
+    <div class="phone-stage">
+      <div class="phone-glow"></div>
+      <div class="phone-bezel">
+        <img src="assets/hero-lobby.png" alt="중력의 탑 로비 화면 — 탑 일러스트와 오르기 버튼">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Features</div>
+      <h2>매치-3, 그 이상의 변수</h2>
+      <p>단순히 맞추는 게임이 아니라, 매 순간 판을 다시 읽어야 하는 퍼즐입니다.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="panel feature-card">
+        <span class="icon">🔄</span>
+        <h3>중력 반전</h3>
+        <p>6수마다 중력이 뒤집혀 재료가 반대 방향으로 쏟아집니다. 안정됐다 싶은 순간, 판이 다시 흔들려요.</p>
+      </div>
+      <div class="panel feature-card">
+        <span class="icon">💎</span>
+        <h3>4종 특수 재료</h3>
+        <p>가로·세로 줄 클리어, 십자 폭탄, 컬러 폭탄까지. 상점에서 별가루로 구매하거나 탑 안의 사건에서 얻을 수 있어요.</p>
+      </div>
+      <div class="panel feature-card">
+        <span class="icon">🌟</span>
+        <h3>별가루 경제</h3>
+        <p>스테이지를 클리어하면 별가루를 얻습니다. 이동 수를 늘리거나 특수 재료를 사는 데 사용하세요.</p>
+      </div>
+      <div class="panel feature-card">
+        <span class="icon">❤️</span>
+        <h3>하트 시스템</h3>
+        <p>도전마다 하트 하나를 사용합니다. 시간이 지나면 자동으로 차오르고, 급하면 보충할 방법도 있어요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="guides" id="guides">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">탑의 주민들</div>
+      <h2>다섯 안내자가 함께 오릅니다</h2>
+      <p>층을 오르는 동안, 저마다 다른 사연을 가진 이들이 말을 걸어옵니다.</p>
+    </div>
+    <div class="guide-grid">
+      <div class="panel guide-card">
+        <div class="guide-avatar">📜</div>
+        <h3>늙은 사서</h3>
+        <span class="guide-floor">낮은 층</span>
+        <p>탑의 오래된 기록을 지키는 사서. 차분한 조언을 건넵니다.</p>
+      </div>
+      <div class="panel guide-card">
+        <div class="guide-avatar">🔥</div>
+        <h3>도깨비불</h3>
+        <span class="guide-floor">낮은 층</span>
+        <p>장난기 많은 불빛. 함정을 알려줄지 모른 척할지는 기분에 달렸어요.</p>
+      </div>
+      <div class="panel guide-card">
+        <div class="guide-avatar">🗝️</div>
+        <h3>탑의 문지기</h3>
+        <span class="guide-floor">중간 층</span>
+        <p>규칙을 지키는 엄격한 수문장. 방심하는 순간을 놓치지 않습니다.</p>
+      </div>
+      <div class="panel guide-card">
+        <div class="guide-avatar">✨</div>
+        <h3>먼지 요정</h3>
+        <span class="guide-floor">중간 층</span>
+        <p>구석구석을 뛰어다니는 작은 요정. 사소한 것에도 눈을 반짝입니다.</p>
+      </div>
+      <div class="panel guide-card">
+        <div class="guide-avatar">🪄</div>
+        <h3>견습 마법사</h3>
+        <span class="guide-floor">높은 층</span>
+        <p>당신과 비슷한 처지의 동료 모험가. 서로 의지하며 함께 올라갑니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps" id="steps">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">How to climb</div>
+      <h2>탑을 오르는 법</h2>
+    </div>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-n">01</div>
+        <div><h3>재료를 밀어 맞추기</h3><p>이웃한 재료를 원하는 방향으로 밀어 3개 이상 줄을 맞추면 사라집니다.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <div><h3>특수 재료 만들기</h3><p>4개 이상 한 번에 맞추면 줄 클리어, 십자 폭탄, 컬러 폭탄 같은 특수 재료가 탄생해요.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <div><h3>중력 반전에 대비하기</h3><p>6수마다 중력이 뒤집히며 보드 전체가 반대 방향으로 다시 쏟아집니다.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <div><h3>목표 마력 달성하기</h3><p>정해진 이동 수 안에 목표 점수를 넘기면 다음 층으로 올라갑니다.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="wrap">
+    <div class="cta-panel">
+      <div class="eyebrow" style="justify-content:center;">출시 준비 중</div>
+      <h2>탑은 지금도<br>조금씩 다듬어지고 있습니다</h2>
+      <p>디자인과 밸런스를 가다듬는 중이에요. 출시 소식은 추후 이 페이지를 통해 안내드릴게요.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-row">
+    <div class="foot-links">
+      <a href="privacy.html">개인정보처리방침</a>
+      <a href="https://kakimind.github.io/apps/">kakimind의 다른 앱</a>
+      <a href="mailto:kakimind@gmail.com">문의하기</a>
+    </div>
+    <div class="copyright">© 2026 kakimind — 중력의 탑 (Tower of Gravity)</div>
+  </div>
+</footer>
+
+</body>
+</html>

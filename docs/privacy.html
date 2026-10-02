@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개인정보처리방침 — 중력의 탑</title>
+<meta name="description" content="중력의 탑(Tower of Gravity) 개인정보처리방침">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗼</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night-950: #150f26;
+    --night-900: #1e1638;
+    --bg-raised: #241a3f;
+    --parchment: #f3e6c8;
+    --parchment-dim: #c9bce0;
+    --gold: #e8b64f;
+    --gold-bright: #ffe9a8;
+    --violet: #9b6bff;
+    --rule: rgba(232, 182, 79, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: linear-gradient(180deg, var(--night-950) 0%, var(--night-900) 100%);
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2 {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--gold);
+    text-wrap: balance;
+    font-weight: 700;
+  }
+
+  a { color: var(--gold); }
+  a:hover { color: var(--gold-bright); }
+
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(10px);
+    background: rgba(21, 15, 38, 0.72);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav-row {
+    max-width: 44rem; margin: 0 auto; padding: 0.9rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand {
+    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 1rem;
+    color: var(--parchment);
+  }
+  .back-link { font-size: 0.85rem; color: var(--parchment-dim); }
+  .back-link:hover { color: var(--gold-bright); }
+
+  .page { max-width: 44rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+
+  header.masthead { margin-bottom: 2.8rem; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700;
+  }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.3rem); margin: 0.5rem 0 0.4rem; line-height: 1.2; }
+  .subtitle { color: var(--parchment-dim); font-size: 0.92rem; margin: 0; }
+
+  nav.toc {
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 1.1rem 1.4rem;
+    margin: 2rem 0 2.8rem;
+    position: static;
+    backdrop-filter: none;
+  }
+  nav.toc p { margin: 0 0 0.6rem; font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--parchment-dim); }
+  nav.toc ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.4rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+  nav.toc a { color: var(--parchment); text-decoration: none; font-size: 0.9rem; }
+  nav.toc a:hover { color: var(--gold-bright); }
+
+  .callout {
+    border: 1px solid var(--rule); border-radius: 14px; padding: 1.2rem 1.4rem;
+    background: var(--bg-raised); margin: 0 0 2.2rem; font-size: 0.88rem; color: var(--parchment-dim);
+  }
+  .callout b { color: var(--gold-bright); }
+
+  section { padding-top: 2.2rem; border-top: 1px solid var(--rule); scroll-margin-top: 1.5rem; }
+  section:first-of-type { border-top: none; padding-top: 0; }
+
+  h2 { font-size: 1.22rem; margin: 0 0 0.8rem; }
+  p { margin: 0 0 1rem; max-width: 40rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.55rem; max-width: 38rem; }
+  li b, dt { color: var(--gold-bright); }
+
+  code {
+    background: var(--bg-raised); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 0.05em 0.4em; font-size: 0.88em;
+  }
+
+  .contact-card {
+    background: var(--bg-raised); border: 1px solid var(--rule); border-radius: 14px;
+    padding: 1.3rem 1.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; align-items: baseline;
+  }
+  .contact-card dt { font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--parchment-dim); margin: 0; flex: 0 0 100%; }
+  .contact-card dd { margin: 0 0 0.7rem; font-size: 1rem; }
+
+  footer { margin-top: 3.2rem; padding-top: 1.4rem; border-top: 1px solid var(--rule); color: var(--parchment-dim); font-size: 0.82rem; opacity: 0.85; }
+
+  @media (max-width: 480px) { .page { padding: 2.5rem 1.1rem 4rem; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-row">
+    <span class="brand">🗼 중력의 탑</span>
+    <a class="back-link" href="index.html">← 홈으로</a>
+  </div>
+</nav>
+
+<div class="page">
+  <header class="masthead">
+    <span class="eyebrow">🗼 중력의 탑 · Tower of Gravity</span>
+    <h1>개인정보처리방침</h1>
+    <p class="subtitle">시행일: 2026년 10월 2일</p>
+  </header>
+
+  <nav class="toc" aria-label="On this page">
+    <p>On this page</p>
+    <ol>
+      <li><a href="#collect">1. 수집하는 정보</a></li>
+      <li><a href="#ads">2. 광고 (예정 안내)</a></li>
+      <li><a href="#sharing">3. 제3자 제공</a></li>
+      <li><a href="#storage">4. 저장 및 보관</a></li>
+      <li><a href="#choices">5. 선택 사항</a></li>
+      <li><a href="#children">6. 아동의 개인정보</a></li>
+      <li><a href="#changes">7. 방침 변경</a></li>
+      <li><a href="#contact">8. 문의</a></li>
+    </ol>
+  </nav>
+
+  <div class="callout">
+    <b>미리 안내드립니다.</b> 중력의 탑은 현재 출시 준비 단계이며, 이 방침은 스토어 등록(Google Play Console)을 준비하기 위해 미리 작성했습니다. 앱은 회원가입이나 로그인 없이 즐기는 매치-3 게임으로, 진행 상황과 설정은 기기 안에만 저장되며 저희는 그 정보를 볼 수도 수집할 수도 없습니다.
+  </div>
+
+  <section id="collect">
+    <h2>1. 수집하는 정보</h2>
+    <ul>
+      <li><b>게임 진행 상황.</b> 클리어한 스테이지, 보유 별가루, 하트(목숨) 상태, 보유한 특수 재료 개수는 기기 안 로컬 저장소에만 저장되며, 어떤 서버로도 전송되지 않습니다.</li>
+      <li><b>언어 설정.</b> 선택한 표시 언어도 같은 방식으로 기기에만 저장됩니다.</li>
+      <li><b>계정 정보.</b> 수집하지 않습니다 — 회원가입·로그인 기능 자체가 없습니다.</li>
+      <li><b>위치·카메라·연락처.</b> 수집하지 않으며, 관련 권한을 요청하지도 않습니다.</li>
+    </ul>
+  </section>
+
+  <section id="ads">
+    <h2>2. 광고 (예정 안내)</h2>
+    <p>상점의 "광고 보고 별가루 받기"는 현재 <b>연습용으로 흉내만 낸 광고</b>이며, 실제 광고 네트워크에 연결되어 있지 않습니다 — 탭하면 짧은 카운트다운 후 바로 보상을 드릴 뿐, 어떤 정보도 외부로 전송되지 않습니다.</p>
+    <p>정식 출시 전까지 이 기능은 <b>Google AdMob 보상형 광고</b>로 교체될 예정입니다. 연결되면 광고 표시 과정에서 AdMob SDK가 광고 식별자(Android Advertising ID 등), 기기 정보, 광고 상호작용 데이터를 수집해 Google과 공유하게 되며, 저희는 이 데이터를 직접 수집·저장하지 않습니다. 이 변경 사항은 연동되는 즉시 이 방침에 반영해 안내드립니다.</p>
+    <p>Google이 광고 서비스를 위해 수집하는 정보는 <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google 광고 정책</a>과 <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">AdMob이 정보를 사용하는 방식</a>에서 확인할 수 있습니다.</p>
+  </section>
+
+  <section id="sharing">
+    <h2>3. 제3자 제공</h2>
+    <p>현재 이 앱에는 연결된 제3자 서비스가 없습니다. 저희는 사용자 데이터를 판매하거나, 분석(애널리틱스) 목적으로 수집하거나, 어디와도 공유하지 않습니다 — 게임 진행 상황이 기기를 벗어나지 않으니, 애초에 저희 쪽에서 공유할 데이터가 없습니다. 위 2항에서 설명한 AdMob이 연동되면, 광고 표시를 위해 필요한 최소한의 정보가 Google과 공유될 수 있습니다.</p>
+  </section>
+
+  <section id="storage">
+    <h2>4. 저장 및 보관</h2>
+    <p>진행 상황·설정은 앱이 설치되어 있는 동안 기기의 로컬 저장소(브라우저 localStorage)에 남습니다. 앱을 삭제하면 이 정보도 기기에서 함께 삭제되며, 저희 쪽에 남는 사본은 없습니다.</p>
+  </section>
+
+  <section id="choices">
+    <h2>5. 선택 사항</h2>
+    <ul>
+      <li><b>광고 개인 최적화.</b> AdMob이 연동된 이후에는 기기의 <code>설정 → 개인정보 보호 → 광고</code>(Android 버전에 따라 위치가 다를 수 있음)에서 광고 개인 최적화를 끄거나 광고 식별자를 재설정할 수 있습니다.</li>
+      <li><b>진행 상황.</b> 앱을 삭제하면 저장된 모든 데이터가 함께 삭제됩니다.</li>
+      <li><b>권한.</b> 이 앱은 별도의 기기 권한을 요청하지 않습니다.</li>
+    </ul>
+  </section>
+
+  <section id="children">
+    <h2>6. 아동의 개인정보</h2>
+    <p>중력의 탑은 만 13세 미만 아동을 대상으로 하지 않으며, 아동의 개인정보를 고의로 수집하지 않습니다. 아동이 이 앱을 통해 정보를 제공했다고 판단되는 경우 아래 연락처로 알려주시면 조치하겠습니다.</p>
+  </section>
+
+  <section id="changes">
+    <h2>7. 방침 변경</h2>
+    <p>이 방침이 변경되면 위의 시행일을 갱신하고, 개정된 내용을 같은 주소에 게시합니다. 특히 AdMob 연동처럼 수집하는 정보의 종류가 달라지는 변경은 이 페이지에 즉시 반영합니다. 변경 이후에도 앱을 계속 사용하시면 갱신된 방침에 동의하신 것으로 간주됩니다.</p>
+  </section>
+
+  <section id="contact">
+    <h2>8. 문의</h2>
+    <p>이 방침이나 앱에 대해 궁금한 점은 아래로 연락해 주세요.</p>
+    <dl class="contact-card">
+      <dt>이메일</dt>
+      <dd><a href="mailto:kakimind@gmail.com">kakimind@gmail.com</a></dd>
+      <dt>앱</dt>
+      <dd>중력의 탑 — Tower of Gravity (Android)</dd>
+    </dl>
+  </section>
+
+  <footer>중력의 탑 — 개인정보처리방침</footer>
+</div>
+
+</body>
+</html>
