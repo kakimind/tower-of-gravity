@@ -8,7 +8,7 @@ import { buildCandySvg, svgToDataUri, candyTextureKey, CANDY_PALETTES } from '..
 import { buildSpecialSvg, specialTextureKey, SpecialArtType } from '../art/specialArt';
 import { buildInitialTypeGrid, findMatchedCells, findLongRuns, findHintSwap, isAdjacent, randomType } from '../engine/BoardModel';
 import { Direction, nextDirection, DIRECTION_ARROW } from '../engine/Gravity';
-import { getStageConfig, TOTAL_STAGES } from '../engine/StageConfig';
+import { getStageConfig, TOTAL_STAGES, ObstacleKind } from '../engine/StageConfig';
 import {
   getCurrentStage, setCurrentStage, completeStage, consumeBoosts, addCurrency, spendHeart,
 } from '../engine/Progress';
@@ -53,10 +53,14 @@ export class GameScene extends Phaser.Scene {
   private movesRemaining = 0;
   private gravityFlipInterval = 5;
   private colorCount = CANDY_TYPE_COUNT;
-  private lockCount = 0;
-  private lockHp = 1;
-  private lockGrid: number[][] = [];
-  private lockOverlays: (Phaser.GameObjects.Container | null)[][] = [];
+  private iceCount = 0;
+  private chainCount = 0;
+  private moldCount = 0;
+  private obstacleHp = 1;
+  private obstacleType: (ObstacleKind | null)[][] = [];
+  private obstacleGridHp: number[][] = [];
+  private obstacleOverlays: (Phaser.GameObjects.Container | null)[][] = [];
+  private obstacleTotal = 0;
   private movesUsed = 0;
   private score = 0;
   private busy = false;
@@ -95,8 +99,10 @@ export class GameScene extends Phaser.Scene {
     );
     this.gravityFlipInterval = cfg.gravityFlipInterval;
     this.colorCount = cfg.colorCount;
-    this.lockCount = cfg.lockCount;
-    this.lockHp = cfg.lockHp;
+    this.iceCount = cfg.iceCount;
+    this.chainCount = cfg.chainCount;
+    this.moldCount = cfg.moldCount;
+    this.obstacleHp = cfg.obstacleHp;
     this.movesUsed = 0;
     this.score = 0;
     this.direction = 'down';
@@ -153,7 +159,7 @@ export class GameScene extends Phaser.Scene {
       this.board.push(row);
     }
 
-    this.setupLocks();
+    this.setupObstacles();
 
     this.placingSpecials = this.pendingSpecialQueue.length;
 
@@ -475,16 +481,31 @@ export class GameScene extends Phaser.Scene {
     return img;
   }
 
-  // Locked (icy) tiles are a passive overlay on top of a slot, independent of
-  // whichever candy currently sits there — they never block swapping or
-  // matching that cell directly, only thaw (lose one HP) when a match clears
-  // one of their 4 orthogonal neighbors. Keeping them tied to the fixed slot
-  // rather than to a falling sprite means gravity/refill code needs no
-  // changes at all to carry lock state around.
-  private setupLocks(): void {
-    this.lockGrid = Array.from({ length: GRID_SIZE }, () => new Array(GRID_SIZE).fill(0));
-    this.lockOverlays = Array.from({ length: GRID_SIZE }, () => new Array<Phaser.GameObjects.Container | null>(GRID_SIZE).fill(null));
-    if (this.lockCount <= 0) return;
+  // Three physical obstacles, each a passive overlay on top of a slot,
+  // independent of whichever candy currently sits there (none of them block
+  // matching that cell directly — only player-initiated swaps). Keeping them
+  // tied to the fixed slot rather than to a falling sprite means gravity/
+  // refill code needs no changes at all to carry obstacle state around.
+  //  - ice: thaws (loses 1 HP) when a match clears one of its 4 orthogonal
+  //    neighbors — the baseline, directly targetable obstacle.
+  //  - chain: never thaws from a neighbor match. Only clears if a cascade
+  //    happens to match its own candy directly (via candies shifting into
+  //    alignment after a refill elsewhere) — the player can't aim for this,
+  //    making chain meaningfully harsher than ice despite sharing its HP pool.
+  //  - mold: thaws like ice, but spreads to one adjacent open cell every few
+  //    moves if left alone, so ignoring it compounds the problem.
+  private readonly MOLD_SPREAD_CHANCE = 0.35;
+  private readonly MOLD_SPREAD_EVERY_MOVES = 3;
+  private readonly OBSTACLE_CAP = Math.floor(GRID_SIZE * GRID_SIZE * 0.4);
+
+  private setupObstacles(): void {
+    this.obstacleType = Array.from({ length: GRID_SIZE }, () => new Array<ObstacleKind | null>(GRID_SIZE).fill(null));
+    this.obstacleGridHp = Array.from({ length: GRID_SIZE }, () => new Array(GRID_SIZE).fill(0));
+    this.obstacleOverlays = Array.from({ length: GRID_SIZE }, () => new Array<Phaser.GameObjects.Container | null>(GRID_SIZE).fill(null));
+    this.obstacleTotal = 0;
+
+    const total = this.iceCount + this.chainCount + this.moldCount;
+    if (total <= 0) return;
 
     const cells: Cell[] = [];
     for (let r = 0; r < GRID_SIZE; r++) {
@@ -494,53 +515,121 @@ export class GameScene extends Phaser.Scene {
       const j = Math.floor(Math.random() * (i + 1));
       [cells[i], cells[j]] = [cells[j], cells[i]];
     }
-    cells.slice(0, this.lockCount).forEach(({ row, col }) => {
-      this.lockGrid[row][col] = this.lockHp;
-      this.lockOverlays[row][col] = this.createLockOverlay(row, col, this.lockHp);
+
+    const plan: ObstacleKind[] = [
+      ...Array<ObstacleKind>(this.iceCount).fill('ice'),
+      ...Array<ObstacleKind>(this.chainCount).fill('chain'),
+      ...Array<ObstacleKind>(this.moldCount).fill('mold'),
+    ];
+    plan.forEach((kind, i) => {
+      const { row, col } = cells[i];
+      this.placeObstacle(row, col, kind, this.obstacleHp);
     });
   }
 
-  private createLockOverlay(row: number, col: number, hp: number): Phaser.GameObjects.Container {
+  private placeObstacle(row: number, col: number, kind: ObstacleKind, hp: number): void {
+    this.obstacleType[row][col] = kind;
+    this.obstacleGridHp[row][col] = hp;
+    this.obstacleOverlays[row][col] = this.createObstacleOverlay(row, col, kind, hp);
+    this.obstacleTotal += 1;
+  }
+
+  private clearObstacle(row: number, col: number, burstColor: number): void {
+    this.obstacleType[row][col] = null;
+    this.obstacleGridHp[row][col] = 0;
+    this.obstacleOverlays[row][col]?.destroy();
+    this.obstacleOverlays[row][col] = null;
+    this.obstacleTotal -= 1;
+    this.spawnBurst(this.cellX(col), this.cellY(row), burstColor);
+  }
+
+  private static readonly OBSTACLE_STYLE: Record<ObstacleKind, { fill: number; stroke: string; icon: string; color: string }> = {
+    ice: { fill: 0xbfe8ff, stroke: '#e8f7ff', icon: '❄', color: '#e8f7ff' },
+    chain: { fill: 0x8a7a63, stroke: '#d8c9a8', icon: '⛓', color: '#d8c9a8' },
+    mold: { fill: 0x3a8f4a, stroke: '#9df0ac', icon: '🍄', color: '#c8f7d0' },
+  };
+
+  private createObstacleOverlay(row: number, col: number, kind: ObstacleKind, hp: number): Phaser.GameObjects.Container {
+    const style = GameScene.OBSTACLE_STYLE[kind];
     const size = CANDY_DISPLAY;
     const g = this.add.graphics();
-    g.fillStyle(0xbfe8ff, 0.22);
+    g.fillStyle(style.fill, 0.22);
     g.fillRoundedRect(-size / 2, -size / 2, size, size, 12 * S);
-    g.lineStyle(2.5 * S, 0xe8f7ff, 0.85);
+    g.lineStyle(2.5 * S, Phaser.Display.Color.HexStringToColor(style.stroke).color, 0.85);
     g.strokeRoundedRect(-size / 2, -size / 2, size, size, 12 * S);
-    const icon = this.add.text(0, -4 * S, '❄', {
-      fontSize: `${16 * S}px`, color: '#e8f7ff',
+    const icon = this.add.text(0, -4 * S, style.icon, {
+      fontSize: `${16 * S}px`, color: style.color,
     }).setOrigin(0.5);
     const pips = this.add.text(0, 15 * S, '●'.repeat(hp), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${8 * S}px`, color: '#e8f7ff',
+      fontFamily: 'Cinzel Decorative, serif', fontSize: `${8 * S}px`, color: style.color,
     }).setOrigin(0.5);
     return this.add.container(this.cellX(col), this.cellY(row), [g, icon, pips]).setDepth(8);
   }
 
   // Called with every cell a match just cleared (including ones consumed by
-  // a special-item detonation) — any locked tile orthogonally touching one
-  // of them thaws by one HP. Each lock thaws at most once per cascade step
-  // even if multiple cleared neighbors touch it, so a big combo doesn't
-  // insta-clear a lock the player hasn't actually worked to reach.
-  private damageLocksAround(cells: Cell[]): void {
+  // a special-item detonation). Ice/mold thaw when one of their orthogonal
+  // neighbors is in this list; chain only thaws if it's in the list itself.
+  // Each obstacle thaws at most once per cascade step even if multiple
+  // cleared cells touch it, so a big combo doesn't insta-clear one.
+  private damageObstacles(cells: Cell[]): void {
     const damaged = new Set<string>();
+
+    const damageAt = (row: number, col: number) => {
+      const key = `${row},${col}`;
+      if (damaged.has(key)) return;
+      const kind = this.obstacleType[row][col];
+      if (!kind || this.obstacleGridHp[row][col] <= 0) return;
+      damaged.add(key);
+      this.obstacleGridHp[row][col] -= 1;
+      this.obstacleOverlays[row][col]?.destroy();
+      this.obstacleOverlays[row][col] = null;
+      if (this.obstacleGridHp[row][col] > 0) {
+        this.obstacleOverlays[row][col] = this.createObstacleOverlay(row, col, kind, this.obstacleGridHp[row][col]);
+      } else {
+        this.clearObstacle(row, col, GameScene.OBSTACLE_STYLE[kind].fill);
+      }
+    };
+
     cells.forEach(({ row, col }) => {
+      const kindHere = this.obstacleType[row][col];
+      if (kindHere === 'chain') damageAt(row, col);
+
       const neighbors: Cell[] = [
         { row: row - 1, col }, { row: row + 1, col }, { row, col: col - 1 }, { row, col: col + 1 },
       ];
       neighbors.forEach(({ row: nr, col: nc }) => {
         if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) return;
-        const key = `${nr},${nc}`;
-        if (damaged.has(key) || this.lockGrid[nr][nc] <= 0) return;
-        damaged.add(key);
-        this.lockGrid[nr][nc] -= 1;
-        this.lockOverlays[nr][nc]?.destroy();
-        this.lockOverlays[nr][nc] = null;
-        if (this.lockGrid[nr][nc] > 0) {
-          this.lockOverlays[nr][nc] = this.createLockOverlay(nr, nc, this.lockGrid[nr][nc]);
-        } else {
-          this.spawnBurst(this.cellX(nc), this.cellY(nr), 0xbfe8ff);
-        }
+        const kind = this.obstacleType[nr][nc];
+        if (kind === 'ice' || kind === 'mold') damageAt(nr, nc);
       });
+    });
+  }
+
+  // Mold's whole identity is that ignoring it makes things worse: every few
+  // player moves, each surviving mold tile has a chance to spread into one
+  // adjacent open cell (one with a candy and no obstacle of its own yet).
+  // Capped so a run of bad luck can't fill the entire board with obstacles.
+  private trySpreadMold(): void {
+    if (this.obstacleTotal >= this.OBSTACLE_CAP) return;
+    const moldCells: Cell[] = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (this.obstacleType[r][c] === 'mold') moldCells.push({ row: r, col: c });
+      }
+    }
+    moldCells.forEach(({ row, col }) => {
+      if (this.obstacleTotal >= this.OBSTACLE_CAP) return;
+      if (Math.random() >= this.MOLD_SPREAD_CHANCE) return;
+      const neighbors: Cell[] = [
+        { row: row - 1, col }, { row: row + 1, col }, { row, col: col - 1 }, { row, col: col + 1 },
+      ];
+      const open = neighbors.filter(
+        ({ row: nr, col: nc }) => nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE
+          && this.board[nr][nc] && !this.obstacleType[nr][nc],
+      );
+      if (open.length === 0) return;
+      const target = open[Math.floor(Math.random() * open.length)];
+      this.placeObstacle(target.row, target.col, 'mold', this.obstacleHp);
     });
   }
 
@@ -670,10 +759,14 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private isLocked(row: number, col: number): boolean {
+    return !!this.obstacleType[row]?.[col];
+  }
+
   private hasAnyMove(): boolean {
     const hasSpecial = this.specialGrid.some((row) => row.some((v) => v !== null));
     if (hasSpecial) return true;
-    return !!findHintSwap(this.typeGrid, GRID_SIZE);
+    return !!findHintSwap(this.typeGrid, GRID_SIZE, (r, c) => this.isLocked(r, c));
   }
 
   private showHint(): void {
@@ -681,7 +774,7 @@ export class GameScene extends Phaser.Scene {
     this.clearHint();
 
     const hasSpecial = this.specialGrid.some((row) => row.some((v) => v !== null));
-    const hint = findHintSwap(this.typeGrid, GRID_SIZE);
+    const hint = findHintSwap(this.typeGrid, GRID_SIZE, (r, c) => this.isLocked(r, c));
 
     if (!hint) {
       if (!hasSpecial) {
@@ -773,6 +866,14 @@ export class GameScene extends Phaser.Scene {
 
   private async attemptSwap(a: Cell, b: Cell): Promise<void> {
     if (!this.board[a.row][a.col] || !this.board[b.row][b.col]) return;
+    // Any obstacle-covered tile (ice/chain/mold) can never be swapped by the
+    // player directly, in either direction, no matter how it's initiated
+    // (tap-to-select or swipe) — each kind has its own way of clearing (see
+    // damageObstacles), but none of them is "the player moves it out of the way".
+    if (this.isLocked(a.row, a.col) || this.isLocked(b.row, b.col)) {
+      playInvalidSwap();
+      return;
+    }
     this.busy = true;
     try {
       playSwap();
@@ -791,6 +892,7 @@ export class GameScene extends Phaser.Scene {
 
       this.movesRemaining -= 1;
       this.movesUsed += 1;
+      if (this.movesUsed % this.MOLD_SPREAD_EVERY_MOVES === 0) this.trySpreadMold();
 
       let forced = new Set<string>();
       if (specialAtA) {
@@ -835,6 +937,7 @@ export class GameScene extends Phaser.Scene {
       playSpecialActivate();
       this.movesRemaining -= 1;
       this.movesUsed += 1;
+      if (this.movesUsed % this.MOLD_SPREAD_EVERY_MOVES === 0) this.trySpreadMold();
 
       const pairedType = type === 'colorBomb' ? this.mostCommonType() : this.typeGrid[cell.row][cell.col];
       const forced = this.getSpecialActivationCells(cell, type, pairedType);
@@ -1036,7 +1139,7 @@ export class GameScene extends Phaser.Scene {
       this.typeGrid[r][c] = -1;
       this.specialGrid[r][c] = null;
     });
-    this.damageLocksAround(cellsToClear);
+    this.damageObstacles(cellsToClear);
 
     await this.applyGravityAndRefill();
     await this.resolveCascade(comboMultiplier + 1);

@@ -76,12 +76,18 @@ export interface HintSwap {
   b: { row: number; col: number };
 }
 
-export function findHintSwap(typeGrid: number[][], size: number): HintSwap | null {
+export function findHintSwap(
+  typeGrid: number[][],
+  size: number,
+  isLocked?: (row: number, col: number) => boolean,
+): HintSwap | null {
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
+      if (isLocked?.(r, c)) continue;
       const neighbors: [number, number][] = [[r, c + 1], [r + 1, c]];
       for (const [r2, c2] of neighbors) {
         if (r2 >= size || c2 >= size) continue;
+        if (isLocked?.(r2, c2)) continue;
         const clone = typeGrid.map((row) => row.slice());
         const tmp = clone[r][c];
         clone[r][c] = clone[r2][c2];
