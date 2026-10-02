@@ -56,7 +56,7 @@ export class GameScene extends Phaser.Scene {
   private busy = false;
   private selected: Cell | null = null;
   private dragStart: Cell | null = null;
-  private selectionRing?: Phaser.GameObjects.Arc;
+  private selectionRing?: Phaser.GameObjects.Container;
   private armPreview?: Phaser.GameObjects.Graphics;
   private armPreviewTween?: Phaser.Tweens.Tween;
   private hintTweens: Phaser.Tweens.Tween[] = [];
@@ -138,10 +138,25 @@ export class GameScene extends Phaser.Scene {
 
     this.placingSpecials = this.pendingSpecialQueue.length;
 
-    this.selectionRing = this.add.circle(0, 0, CANDY_DISPLAY / 2 + 4 * S, 0x000000, 0);
-    this.selectionRing.setStrokeStyle(4 * S, 0xffffff, 0.95);
+    // Arcane selection ring: a gold band with a faint violet glow and a
+    // trio of slowly orbiting runes, instead of a plain white outline, to
+    // match the tower theme's selection/highlight feedback.
+    const ringRadius = CANDY_DISPLAY / 2 + 4 * S;
+    const ringGlow = this.add.circle(0, 0, ringRadius + 5 * S, 0x9b6bff, 0.14);
+    const ringGold = this.add.circle(0, 0, ringRadius, 0x000000, 0);
+    ringGold.setStrokeStyle(3 * S, 0xe8b64f, 0.95);
+    const runes = [0, 1, 2].map((i) => {
+      const angle = (i / 3) * Math.PI * 2;
+      const rx = Math.cos(angle) * (ringRadius + 3 * S);
+      const ry = Math.sin(angle) * (ringRadius + 3 * S);
+      return this.add.star(rx, ry, 4, 1.4 * S, 3 * S, 0xffe9a8, 0.9);
+    });
+    this.selectionRing = this.add.container(0, 0, [ringGlow, ringGold, ...runes]);
     this.selectionRing.setVisible(false);
     this.selectionRing.setDepth(10);
+    this.tweens.add({
+      targets: this.selectionRing, angle: 360, duration: 4000, repeat: -1, ease: 'Linear',
+    });
 
     this.gravityBannerBg = this.add.graphics().setDepth(19).setAlpha(0);
     this.gravityBannerBg.fillStyle(0x170f2b, 0.92);
