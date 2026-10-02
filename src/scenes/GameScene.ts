@@ -272,6 +272,7 @@ export class GameScene extends Phaser.Scene {
       stroke: '#150f26',
       strokeThickness: 4 * S,
       align: 'center',
+      wordWrap: { width: 150 * S },
     }).setOrigin(0.5).setDepth(37).setAlpha(0);
 
     icon.setAngle(-25);

@@ -39,6 +39,7 @@ export class LobbyScene extends Phaser.Scene {
   private currencyText?: Phaser.GameObjects.Text;
   private boostText?: Phaser.GameObjects.Text;
   private heartsText?: Phaser.GameObjects.Text;
+  private heartsTimerText?: Phaser.GameObjects.Text;
   private shopGroup?: Phaser.GameObjects.Container;
 
   constructor() {
@@ -71,49 +72,58 @@ export class LobbyScene extends Phaser.Scene {
     const unlocked = getUnlockedStage();
     const floor = Math.ceil(stage / 10);
 
-    this.add.text(W / 2, 26 * S, t('lobby.floorStage', { floor, stage, total: TOTAL_STAGES }), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, fontStyle: '700', color: '#e4dcf5',
+    this.add.text(W / 2, 20 * S, t('lobby.floorStage', { floor, stage, total: TOTAL_STAGES }), {
+      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#e4dcf5',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0.5);
 
-    const pill = this.add.graphics();
-    pill.fillStyle(0x150f26, 0.85);
-    pill.lineStyle(2 * S, 0xe8b64f, 0.9);
-    pill.fillRoundedRect(W / 2 - 70 * S, 44 * S, 140 * S, 32 * S, 16 * S);
-    pill.strokeRoundedRect(W / 2 - 70 * S, 44 * S, 140 * S, 32 * S, 16 * S);
-    this.currencyText = this.add.text(W / 2, 60 * S, t('lobby.currency', { n: getCurrency() }), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${16 * S}px`, color: '#fff3c4',
-      stroke: '#0a0618', strokeThickness: 5,
+    // Single consolidated status bar (currency + hearts side by side with a
+    // thin divider) instead of three separately-stacked pills — frees the
+    // vertical space previously spent on stacked status rows so the tower
+    // illustration below can take over as the actual hero of the screen.
+    const statusTop = 34 * S;
+    const statusH = 30 * S;
+    const statusPill = this.add.graphics();
+    statusPill.fillStyle(0x150f26, 0.85);
+    statusPill.lineStyle(2 * S, 0xe8b64f, 0.9);
+    statusPill.fillRoundedRect(W / 2 - 110 * S, statusTop, 220 * S, statusH, 15 * S);
+    statusPill.strokeRoundedRect(W / 2 - 110 * S, statusTop, 220 * S, statusH, 15 * S);
+    statusPill.lineStyle(1.5 * S, 0xe8b64f, 0.35);
+    statusPill.lineBetween(W / 2, statusTop + 6 * S, W / 2, statusTop + statusH - 6 * S);
+
+    const statusCenterY = statusTop + statusH / 2;
+    this.currencyText = this.add.text(W / 2 - 55 * S, statusCenterY, t('lobby.currency', { n: getCurrency() }), {
+      fontFamily: 'Cinzel Decorative, serif', fontSize: `${13 * S}px`, color: '#fff3c4',
+      stroke: '#0a0618', strokeThickness: 4 * S,
     }).setOrigin(0.5);
 
-    // A couple of tiny twinkling sparkles on the currency pill, echoing the
-    // board's corner sigils, so the stardust reads as faintly magical
-    // rather than a plain number badge.
-    [[-58, -8, 2200], [56, 6, 1800]].forEach(([dx, dy, dur], i) => {
-      const sparkle = this.add.star(W / 2 + dx * S, 60 * S + dy * S, 4, 1 * S, 2.2 * S, 0xfff3c4, 0.8);
+    // A couple of tiny twinkling sparkles near the currency segment, echoing
+    // the board's corner sigils, so the stardust reads as faintly magical
+    // rather than a plain number.
+    [[-48, -7, 2200], [45, 6, 1800]].forEach(([dx, dy, dur], i) => {
+      const sparkle = this.add.star(W / 2 - 55 * S + dx * S, statusCenterY + dy * S, 4, 0.9 * S, 2 * S, 0xfff3c4, 0.8);
       this.tweens.add({
         targets: sparkle, alpha: 0.15, scale: 1.4, yoyo: true, repeat: -1, duration: dur, delay: i * 400, ease: 'Sine.easeInOut',
       });
     });
 
-    // Dark backing + thin gold rim behind the hearts row, matching the
-    // currency pill above it instead of leaving the hearts as bare text
-    // floating on the night sky.
-    const heartsPill = this.add.graphics();
-    heartsPill.fillStyle(0x150f26, 0.65);
-    heartsPill.lineStyle(1.5 * S, 0xe8b64f, 0.5);
-    heartsPill.fillRoundedRect(W / 2 - 95 * S, 80 * S, 190 * S, 22 * S, 11 * S);
-    heartsPill.strokeRoundedRect(W / 2 - 95 * S, 80 * S, 190 * S, 22 * S, 11 * S);
-
-    this.heartsText = this.add.text(W / 2, 90 * S, '', {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
+    this.heartsText = this.add.text(W / 2 + 58 * S, statusCenterY, '', {
+      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
+    }).setOrigin(0.5);
+
+    // Regen countdown as its own small subtitle rather than appended inline
+    // to the heart icons — the icons stay fixed-width in the status bar's
+    // right segment, and this line only appears while hearts are missing.
+    this.heartsTimerText = this.add.text(W / 2, statusTop + statusH + 12 * S, '', {
+      fontFamily: 'Cormorant Garamond, serif', fontSize: `${10 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
+      stroke: '#0a0618', strokeThickness: 2.5 * S,
     }).setOrigin(0.5);
     this.refreshHearts();
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.refreshHearts() });
 
-    this.boostText = this.add.text(W / 2, 110 * S, '', {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#9df0ac', align: 'center',
+    this.boostText = this.add.text(W / 2, statusTop + statusH + 28 * S, '', {
+      fontFamily: 'Cormorant Garamond, serif', fontSize: `${11 * S}px`, fontStyle: '700', color: '#9df0ac', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
       wordWrap: { width: W - 40 * S },
       lineSpacing: 2 * S,
@@ -331,14 +341,15 @@ export class LobbyScene extends Phaser.Scene {
   private refreshHearts(): void {
     const hearts = getHearts();
     const icons = Array.from({ length: HEART_MAX }, (_, i) => (i < hearts ? '❤️' : '🖤')).join(' ');
-    let text = icons;
+    this.heartsText?.setText(icons);
     if (hearts < HEART_MAX) {
       const ms = getMsUntilNextHeart();
       const mm = Math.floor(ms / 60000);
       const ss = Math.floor((ms % 60000) / 1000);
-      text += t('lobby.nextHeart', { mm, ss: String(ss).padStart(2, '0') });
+      this.heartsTimerText?.setText(t('lobby.nextHeart', { mm, ss: String(ss).padStart(2, '0') }));
+    } else {
+      this.heartsTimerText?.setText('');
     }
-    this.heartsText?.setText(text);
   }
 
   private confirmAd(message: string, onConfirm: () => void): void {
@@ -533,9 +544,9 @@ export class LobbyScene extends Phaser.Scene {
           overlay.destroy();
           label.destroy();
           countdown.destroy();
-          addCurrency(30);
+          addCurrency(200);
           this.refreshAll();
-          this.spawnRewardPopup(cx, cy, '+30 🌟');
+          this.spawnRewardPopup(cx, cy, '+200 🌟');
         }
       },
     });
