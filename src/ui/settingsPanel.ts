@@ -1,4 +1,5 @@
 import { LANGUAGES, getLanguage, setLanguage, t } from '../i18n';
+import { isSfxMuted, setSfxMuted } from '../audio/sfx';
 
 let currentSceneKey = 'LobbyScene';
 
@@ -51,8 +52,9 @@ export function initSettingsPanel(): void {
   const closeBtn = document.getElementById('settings-close-btn');
   const exitBtn = document.getElementById('settings-exit-btn');
   const languageSelect = document.getElementById('settings-language') as HTMLSelectElement | null;
+  const sfxToggle = document.getElementById('settings-sfx') as HTMLInputElement | null;
 
-  if (!openBtn || !overlay || !closeBtn || !exitBtn || !languageSelect) return;
+  if (!openBtn || !overlay || !closeBtn || !exitBtn || !languageSelect || !sfxToggle) return;
 
   LANGUAGES.forEach((lang) => {
     const opt = document.createElement('option');
@@ -61,6 +63,7 @@ export function initSettingsPanel(): void {
     languageSelect.appendChild(opt);
   });
   languageSelect.value = getLanguage();
+  sfxToggle.checked = !isSfxMuted();
 
   applyTranslations();
   syncExitVisibility();
@@ -78,6 +81,10 @@ export function initSettingsPanel(): void {
   languageSelect.addEventListener('change', () => {
     setLanguage(languageSelect.value);
     applyTranslations();
+  });
+
+  sfxToggle.addEventListener('change', () => {
+    setSfxMuted(!sfxToggle.checked);
   });
 
   exitBtn.addEventListener('click', () => {

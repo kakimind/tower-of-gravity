@@ -39,6 +39,7 @@ export type TranslationKey =
   | 'footerHint'
   | 'settings.title'
   | 'settings.language'
+  | 'settings.sfx'
   | 'settings.exit'
   | 'settings.close'
   | 'settings.exitConfirm'
@@ -104,6 +105,7 @@ const ko: Dictionary = {
   footerHint: '재료를 원하는 방향으로 밀어서 조합하세요\n· {n}수마다 실패한 주문이 중력을 뒤집습니다',
   'settings.title': '설정',
   'settings.language': '언어',
+  'settings.sfx': '효과음',
   'settings.exit': '나가기',
   'settings.close': '닫기',
   'settings.exitConfirm': '정말 나가시겠어요? 진행 중인\n스테이지는 저장되지 않습니다.',
@@ -168,6 +170,7 @@ const en: Dictionary = {
   footerHint: 'Swipe an ingredient toward a neighbor to swap it\n· gravity flips every {n} moves',
   'settings.title': 'Settings',
   'settings.language': 'Language',
+  'settings.sfx': 'Sound Effects',
   'settings.exit': 'Exit',
   'settings.close': 'Close',
   'settings.exitConfirm': 'Are you sure you want to exit? Progress\non this stage will not be saved.',

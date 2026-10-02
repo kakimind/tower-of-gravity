@@ -395,6 +395,55 @@
       color: var(--parchment);
     }
 
+    .settings-field-row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .settings-field-row label { margin: 0; }
+
+    /* A bare <input type=checkbox> rendered oddly oversized inside the
+       Android WebView when given a non-native width/height (its native
+       widget doesn't scale cleanly) — appearance:none plus a hand-drawn
+       track/knob avoids depending on that native rendering entirely. */
+    .settings-toggle {
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+      width: 42px;
+      height: 24px;
+      margin: 0;
+      border-radius: 999px;
+      background: rgba(232, 182, 79, 0.18);
+      border: 1.5px solid rgba(232, 182, 79, 0.5);
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: background 0.15s ease;
+    }
+
+    .settings-toggle::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--parchment);
+      transition: transform 0.15s ease;
+    }
+
+    .settings-toggle:checked {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .settings-toggle:checked::before {
+      transform: translateX(18px);
+      background: var(--ink);
+    }
+
     .settings-exit-btn {
       width: 100%;
       font-family: 'Cinzel Decorative', serif;
@@ -500,6 +549,10 @@
       <div class="settings-field">
         <label for="settings-language" data-i18n="settings.language">언어</label>
         <select id="settings-language"></select>
+      </div>
+      <div class="settings-field settings-field-row">
+        <label for="settings-sfx" data-i18n="settings.sfx">효과음</label>
+        <input type="checkbox" id="settings-sfx" class="settings-toggle">
       </div>
       <button class="settings-exit-btn" id="settings-exit-btn" data-i18n="settings.exit" hidden>나가기</button>
       <button class="settings-close-btn" id="settings-close-btn" data-i18n="settings.close">닫기</button>

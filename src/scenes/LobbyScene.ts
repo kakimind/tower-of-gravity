@@ -12,7 +12,7 @@ import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
 import { playMockAd } from '../ui/AdOverlay';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
-import { playReward } from '../audio/sfx';
+import { playReward, playHeartGain } from '../audio/sfx';
 import { t } from '../i18n';
 
 interface SpecialShopItem {
@@ -460,7 +460,7 @@ export class LobbyScene extends Phaser.Scene {
     playMockAd(this, cx, cy, () => {
       addHearts(1);
       this.refreshHearts();
-      this.spawnRewardPopup(cx, cy, '+1 ❤️');
+      this.spawnRewardPopup(cx, cy, '+1 ❤️', playHeartGain);
     });
   }
 
@@ -641,8 +641,8 @@ export class LobbyScene extends Phaser.Scene {
     });
   }
 
-  private spawnRewardPopup(x: number, y: number, text: string): void {
-    playReward();
+  private spawnRewardPopup(x: number, y: number, text: string, sound: () => void = playReward): void {
+    sound();
     const txt = this.add.text(x, y, text, {
       fontFamily: 'Cinzel Decorative, serif', fontSize: `${22 * S}px`, color: '#e8b64f',
       stroke: '#150f26', strokeThickness: 5,

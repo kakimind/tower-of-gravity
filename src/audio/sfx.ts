@@ -5,7 +5,16 @@
 // second" shape so they read as game feedback rather than music.
 
 let ctx: AudioContext | null = null;
-let muted = false;
+
+const MUTE_KEY = 'towerGravitySfxMuted';
+function loadMuted(): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+let muted = loadMuted();
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -47,6 +56,11 @@ export function unlockAudioOnFirstGesture(): void {
 
 export function setSfxMuted(value: boolean): void {
   muted = value;
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(MUTE_KEY, value ? '1' : '0');
+  } catch {
+    // ignore
+  }
 }
 
 export function isSfxMuted(): boolean {
