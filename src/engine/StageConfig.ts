@@ -28,9 +28,10 @@ export function getStageConfig(stage: number): StageConfig {
   const movesLimit = 20 + Math.floor((s - 1) / 10) * 2;
   const gravityFlipInterval = Math.max(3, 6 - Math.floor((s - 1) / 200));
 
-  // Ease new players in with fewer ingredient colors, then ramp to the full
-  // palette by floor 3 — a short onboarding curve, not a permanent cap.
-  const colorCount = Math.min(CANDY_TYPE_COUNT, floor === 1 ? CANDY_TYPE_COUNT - 2 : floor === 2 ? CANDY_TYPE_COUNT - 1 : CANDY_TYPE_COUNT);
+  // Ease new players in with one fewer ingredient color on floor 1, then the
+  // full palette from floor 2 on — a short onboarding nudge, not a permanent
+  // cap. (Floor 1 originally dropped two colors; that read as too easy.)
+  const colorCount = floor === 1 ? CANDY_TYPE_COUNT - 1 : CANDY_TYPE_COUNT;
 
   // Locked (icy) tiles: inert overlays that don't block swaps or matches on
   // their own cell, but only thaw when a match clears a neighboring cell —
