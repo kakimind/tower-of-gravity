@@ -999,7 +999,7 @@ export class GameScene extends Phaser.Scene {
   private showComboBanner(multiplier: number): void {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
-    const txt = this.add.text(cx, cy, `COMBO x${multiplier}!`, {
+    const txt = this.add.text(cx, cy, t('game.combo', { n: multiplier }), {
       fontFamily: 'Cinzel Decorative, serif',
       fontSize: `${26 * S}px`,
       color: '#ffd166',

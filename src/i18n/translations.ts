@@ -89,7 +89,8 @@ export type TranslationKey =
   | 'lobby.shopAdLabel'
   | 'lobby.get'
   | 'lobby.confirmWatchAdReward'
-  | 'lobby.insufficientCurrency';
+  | 'lobby.insufficientCurrency'
+  | 'game.combo';
 
 type Dictionary = Record<TranslationKey, string>;
 
@@ -153,6 +154,7 @@ const ko: Dictionary = {
   'lobby.get': '받기',
   'lobby.confirmWatchAdReward': '광고를 보고 별가루\n30개를 받으시겠어요?',
   'lobby.insufficientCurrency': '별가루가 부족합니다',
+  'game.combo': '콤보 x{n}!',
 };
 
 const en: Dictionary = {
@@ -215,6 +217,7 @@ const en: Dictionary = {
   'lobby.get': 'Get',
   'lobby.confirmWatchAdReward': 'Watch an ad to get\n30 Stardust?',
   'lobby.insufficientCurrency': 'Not enough Stardust',
+  'game.combo': 'COMBO x{n}!',
 };
 
 export const DICTIONARIES: Partial<Record<string, Dictionary>> = { ko, en };
