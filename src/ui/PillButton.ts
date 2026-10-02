@@ -34,7 +34,7 @@ const DEFAULTS: Required<PillButtonOptions> = {
 // Lightens (positive amount) or darkens (negative) a 0xRRGGBB color by
 // mixing each channel toward white/black, used to fake a glossy gem-cut
 // gradient on buttons instead of a flat fill.
-function shade(color: number, amount: number): number {
+export function shade(color: number, amount: number): number {
   const target = amount >= 0 ? 255 : 0;
   const t = Math.min(1, Math.abs(amount));
   const mix = (c: number) => Math.round(c + (target - c) * t);

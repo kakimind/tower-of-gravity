@@ -9,6 +9,7 @@ import {
 import { buildSpecialSvg, specialTextureKey, SpecialArtType } from '../art/specialArt';
 import { svgToDataUri } from '../art/candyArt';
 import { createPillButton } from '../ui/PillButton';
+import { drawPanel } from '../ui/Panel';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import { playReward } from '../audio/sfx';
 import { t } from '../i18n';
@@ -315,8 +316,7 @@ export class LobbyScene extends Phaser.Scene {
     const cx = W / 2;
     const cy = H / 2;
     const overlay = this.add.rectangle(cx, cy, W, H, 0x0a0618, 0.75).setDepth(58).setInteractive();
-    const panel = this.add.rectangle(cx, cy, W - 80 * S, 150 * S, 0x241a3f, 1)
-      .setStrokeStyle(2 * S, 0xe8b64f, 0.8).setDepth(59);
+    const panel = drawPanel(this, cx, cy, W - 80 * S, 150 * S, { radius: 16 * S, strokeWidth: 2 * S, depth: 59 });
     const text = this.add.text(cx, cy - 30 * S, message, {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
@@ -394,8 +394,9 @@ export class LobbyScene extends Phaser.Scene {
     const overlay = this.add.rectangle(cx, cy, W, H, 0x0a0618, 0.85).setInteractive();
     children.push(overlay);
 
-    const panel = this.add.rectangle(cx, cy, W - 40 * S, 360 * S, 0x241a3f, 1).setStrokeStyle(2 * S, 0xe8b64f, 0.8);
-    panel.setInteractive();
+    const panel = drawPanel(this, cx, cy, W - 40 * S, 360 * S, {
+      radius: 16 * S, strokeWidth: 2 * S, interactive: true,
+    });
     children.push(panel);
 
     const title = this.add.text(cx, cy - 160 * S, t('lobby.shopTitle'), {

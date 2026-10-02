@@ -15,6 +15,7 @@ import {
 import { getStageIntro, getFloor, rollRandomEvent, EventItem } from '../data/story';
 import { t } from '../i18n';
 import { createPillButton } from '../ui/PillButton';
+import { drawPanel } from '../ui/Panel';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import {
   playTap, playSwap, playInvalidSwap, playMatch, playSpecialPromote,
@@ -327,11 +328,9 @@ export class GameScene extends Phaser.Scene {
     const cy = GRID_SIZE * TILE / 2;
 
     const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.82).setDepth(40);
-    const cardG = this.add.graphics().setDepth(41);
-    cardG.fillStyle(0x2c1f4a, 1);
-    cardG.fillRoundedRect(cx - (GRID_SIZE * TILE - 40 * S) / 2, cy - 75 * S, GRID_SIZE * TILE - 40 * S, 150 * S, 18 * S);
-    cardG.lineStyle(2 * S, 0xe8b64f, 0.8);
-    cardG.strokeRoundedRect(cx - (GRID_SIZE * TILE - 40 * S) / 2, cy - 75 * S, GRID_SIZE * TILE - 40 * S, 150 * S, 18 * S);
+    const cardG = drawPanel(this, cx, cy, GRID_SIZE * TILE - 40 * S, 150 * S, {
+      fillColor: 0x2c1f4a, radius: 18 * S, strokeWidth: 2 * S, depth: 41,
+    });
     const speakerText = this.add.text(cx, cy - 62 * S, speaker, {
       fontFamily: 'Cinzel Decorative, serif',
       fontSize: `${15 * S}px`,
@@ -1193,11 +1192,9 @@ export class GameScene extends Phaser.Scene {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
     const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.75).setDepth(58).setInteractive();
-    const panelG = this.add.graphics().setDepth(59);
-    panelG.fillStyle(0x241a3f, 1);
-    panelG.fillRoundedRect(cx - (GRID_SIZE * TILE - 80 * S) / 2, cy - 75 * S, GRID_SIZE * TILE - 80 * S, 150 * S, 16 * S);
-    panelG.lineStyle(2 * S, 0xe8b64f, 0.8);
-    panelG.strokeRoundedRect(cx - (GRID_SIZE * TILE - 80 * S) / 2, cy - 75 * S, GRID_SIZE * TILE - 80 * S, 150 * S, 16 * S);
+    const panelG = drawPanel(this, cx, cy, GRID_SIZE * TILE - 80 * S, 150 * S, {
+      radius: 16 * S, strokeWidth: 2 * S, depth: 59,
+    });
     const text = this.add.text(cx, cy - 30 * S, message, {
       fontFamily: 'Cormorant Garamond, serif', fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
