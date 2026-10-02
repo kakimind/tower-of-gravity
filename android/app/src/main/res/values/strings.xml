@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Top of Gravity</string>
+    <string name="title_activity_main">Top of Gravity</string>
+    <string name="package_name">com.kakimind.topofgravity</string>
+    <string name="custom_url_scheme">com.kakimind.topofgravity</string>
+</resources>
