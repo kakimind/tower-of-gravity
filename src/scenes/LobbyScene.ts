@@ -10,6 +10,7 @@ import { buildSpecialSvg, specialTextureKey, SpecialArtType, SPECIAL_THEMES } fr
 import { svgToDataUri } from '../art/candyArt';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
+import { playMockAd } from '../ui/AdOverlay';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import { playReward } from '../audio/sfx';
 import { t } from '../i18n';
@@ -456,30 +457,10 @@ export class LobbyScene extends Phaser.Scene {
   private playAdForHeart(): void {
     const cx = W / 2;
     const cy = H / 2;
-    const overlay = this.add.rectangle(cx, cy, W, H, 0x000000, 0.9).setDepth(60);
-    const label = this.add.text(cx, cy, t('ad.playing'), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${18 * S}px`, color: '#ffffff',
-    }).setOrigin(0.5).setDepth(61);
-    let remaining = 3;
-    const countdown = this.add.text(cx, cy + 40 * S, `${remaining}`, {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${24 * S}px`, color: '#e8b64f',
-    }).setOrigin(0.5).setDepth(61);
-
-    this.time.addEvent({
-      delay: 700,
-      repeat: 2,
-      callback: () => {
-        remaining -= 1;
-        countdown.setText(String(Math.max(0, remaining)));
-        if (remaining <= 0) {
-          overlay.destroy();
-          label.destroy();
-          countdown.destroy();
-          addHearts(1);
-          this.refreshHearts();
-          this.spawnRewardPopup(cx, cy, '+1 ❤️');
-        }
-      },
+    playMockAd(this, cx, cy, () => {
+      addHearts(1);
+      this.refreshHearts();
+      this.spawnRewardPopup(cx, cy, '+1 ❤️');
     });
   }
 
@@ -634,32 +615,10 @@ export class LobbyScene extends Phaser.Scene {
     }
     const cx = W / 2;
     const cy = H / 2;
-    const overlay = this.add.rectangle(cx, cy, W, H, 0x000000, 0.9).setDepth(60);
-    const label = this.add.text(cx, cy, t('ad.playing'), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${18 * S}px`, color: '#ffffff',
-    }).setOrigin(0.5).setDepth(61);
-
-    let remaining = 3;
-    const countdown = this.add.text(cx, cy + 40 * S, `${remaining}`, {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${24 * S}px`, color: '#e8b64f',
-    }).setOrigin(0.5).setDepth(61);
-
-    const tick = this.time.addEvent({
-      delay: 700,
-      repeat: 2,
-      callback: () => {
-        remaining -= 1;
-        countdown.setText(String(Math.max(0, remaining)));
-        if (remaining <= 0) {
-          tick.remove(false);
-          overlay.destroy();
-          label.destroy();
-          countdown.destroy();
-          addCurrency(200);
-          this.refreshAll();
-          this.spawnRewardPopup(cx, cy, '+200 🌟');
-        }
-      },
+    playMockAd(this, cx, cy, () => {
+      addCurrency(200);
+      this.refreshAll();
+      this.spawnRewardPopup(cx, cy, '+200 🌟');
     });
   }
 

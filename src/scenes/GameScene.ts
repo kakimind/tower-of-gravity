@@ -16,6 +16,7 @@ import { getStageIntro, getFloor, rollRandomEvent, EventItem } from '../data/sto
 import { t } from '../i18n';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
+import { playMockAd } from '../ui/AdOverlay';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import {
   playTap, playSwap, playInvalidSwap, playMatch, playSpecialPromote,
@@ -1261,31 +1262,10 @@ export class GameScene extends Phaser.Scene {
   private playMockAdForMoves(): void {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
-    const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x000000, 0.9).setDepth(60);
-    const label = this.add.text(cx, cy, t('ad.playing'), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${18 * S}px`, color: '#ffffff',
-    }).setOrigin(0.5).setDepth(61);
-    let remaining = 3;
-    const countdown = this.add.text(cx, cy + 40 * S, `${remaining}`, {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${24 * S}px`, color: '#e8b64f',
-    }).setOrigin(0.5).setDepth(61);
-
-    const tick = this.time.addEvent({
-      delay: 700,
-      repeat: 2,
-      callback: () => {
-        remaining -= 1;
-        countdown.setText(String(Math.max(0, remaining)));
-        if (remaining <= 0) {
-          tick.remove(false);
-          overlay.destroy();
-          label.destroy();
-          countdown.destroy();
-          this.movesRemaining += 10;
-          this.updateHud();
-          this.armIdleTimer();
-        }
-      },
+    playMockAd(this, cx, cy, () => {
+      this.movesRemaining += 10;
+      this.updateHud();
+      this.armIdleTimer();
     });
   }
 
