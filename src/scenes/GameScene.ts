@@ -158,12 +158,9 @@ export class GameScene extends Phaser.Scene {
       targets: this.selectionRing, angle: 360, duration: 4000, repeat: -1, ease: 'Linear',
     });
 
-    this.gravityBannerBg = this.add.graphics().setDepth(19).setAlpha(0);
-    this.gravityBannerBg.fillStyle(0x170f2b, 0.92);
-    this.gravityBannerBg.lineStyle(2 * S, 0xe8b64f, 0.9);
-    this.gravityBannerBg.fillRoundedRect(-110 * S, -44 * S, 220 * S, 88 * S, 16 * S);
-    this.gravityBannerBg.strokeRoundedRect(-110 * S, -44 * S, 220 * S, 88 * S, 16 * S);
-    this.gravityBannerBg.setPosition(GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2);
+    this.gravityBannerBg = drawPanel(this, GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2, 220 * S, 88 * S, {
+      fillColor: 0x170f2b, strokeAlpha: 0.9, radius: 16 * S, strokeWidth: 2 * S, depth: 19,
+    }).setAlpha(0);
 
     this.gravityBanner = this.add.text(GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2, '', {
       fontFamily: 'Cinzel Decorative, serif',
