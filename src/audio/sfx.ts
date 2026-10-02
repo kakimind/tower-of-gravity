@@ -155,7 +155,7 @@ export function playMatch(comboMultiplier = 1): void {
 }
 
 export function playGameStart(): void {
-  playClip('/audio/game-start.mp3', 0.35);
+  playClip('/audio/game-start.mp3', 0.2);
 }
 
 export function playSpecialPromote(): void {
