@@ -1,12 +1,18 @@
 import { TOTAL_STAGES } from './StageConfig';
 import type { SpecialArtType } from '../art/specialArt';
+import type { NukeType } from '../art/nukeArt';
 
 const KEY = 'towerGravityProgress';
 
 export type SpecialCounts = Record<SpecialArtType, number>;
+export type NukeCounts = Record<NukeType, number>;
 
 const EMPTY_SPECIAL_COUNTS: SpecialCounts = {
   lineRow: 0, lineCol: 0, crossBomb: 0, colorBomb: 0,
+};
+
+const EMPTY_NUKE_COUNTS: NukeCounts = {
+  bomb: 0, blackHole: 0, lightning: 0, meteor: 0,
 };
 
 interface ProgressData {
@@ -15,6 +21,7 @@ interface ProgressData {
   currency: number;
   bonusMovesOwned: number;
   specialOwned: SpecialCounts;
+  nukeOwned: NukeCounts;
   hearts: number;
   heartRegenSince: number;
 }
@@ -28,6 +35,7 @@ const DEFAULT_DATA: ProgressData = {
   currency: 0,
   bonusMovesOwned: 0,
   specialOwned: { ...EMPTY_SPECIAL_COUNTS },
+  nukeOwned: { ...EMPTY_NUKE_COUNTS },
   hearts: HEART_MAX,
   heartRegenSince: 0,
 };
@@ -59,7 +67,12 @@ function load(): ProgressData {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ProgressData>;
       data = (parsed.unlocked ?? 0) >= 1 && (parsed.current ?? 0) >= 1
-        ? { ...DEFAULT_DATA, ...parsed, specialOwned: { ...EMPTY_SPECIAL_COUNTS, ...parsed.specialOwned } }
+        ? {
+          ...DEFAULT_DATA,
+          ...parsed,
+          specialOwned: { ...EMPTY_SPECIAL_COUNTS, ...parsed.specialOwned },
+          nukeOwned: { ...EMPTY_NUKE_COUNTS, ...parsed.nukeOwned },
+        }
         : { ...DEFAULT_DATA };
     } else {
       data = { ...DEFAULT_DATA };
@@ -118,14 +131,44 @@ export function trySpendCurrency(amount: number): boolean {
   return true;
 }
 
-export interface Boosts {
-  bonusMovesOwned: number;
-  specialOwned: SpecialCounts;
+// Every shop-bought item (bonus-move, hand-placed special, and finisher nuke)
+// is a standing inventory the player uses on demand mid-stage via the HUD
+// item bag — none of these are reset or auto-applied at stage start, so
+// buying one and not using it just carries it over to the next stage.
+export function getNukeInventory(): NukeCounts {
+  return { ...load().nukeOwned };
 }
 
-export function getBoosts(): Boosts {
+export function useNukeItem(type: NukeType): boolean {
   const data = load();
-  return { bonusMovesOwned: data.bonusMovesOwned, specialOwned: { ...data.specialOwned } };
+  if (data.nukeOwned[type] <= 0) return false;
+  data.nukeOwned[type] -= 1;
+  save(data);
+  return true;
+}
+
+export function getBonusMovesInventory(): number {
+  return load().bonusMovesOwned;
+}
+
+export function useBonusMovesItem(): boolean {
+  const data = load();
+  if (data.bonusMovesOwned <= 0) return false;
+  data.bonusMovesOwned -= 1;
+  save(data);
+  return true;
+}
+
+export function getSpecialInventory(): SpecialCounts {
+  return { ...load().specialOwned };
+}
+
+export function useSpecialItem(type: SpecialArtType): boolean {
+  const data = load();
+  if (data.specialOwned[type] <= 0) return false;
+  data.specialOwned[type] -= 1;
+  save(data);
+  return true;
 }
 
 export function addBonusMovesBoost(): void {
@@ -140,13 +183,10 @@ export function addSpecialBoost(type: SpecialArtType): void {
   save(data);
 }
 
-export function consumeBoosts(): Boosts {
+export function addNukeBoost(type: NukeType): void {
   const data = load();
-  const used = { bonusMovesOwned: data.bonusMovesOwned, specialOwned: { ...data.specialOwned } };
-  data.bonusMovesOwned = 0;
-  data.specialOwned = { ...EMPTY_SPECIAL_COUNTS };
+  data.nukeOwned[type] += 1;
   save(data);
-  return used;
 }
 
 export function getHearts(): number {

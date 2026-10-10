@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { playTap } from '../audio/sfx';
+import { TITLE_FONT } from '../config/GameConfig';
 
 export interface PillButtonOptions {
   fontFamily?: string;
@@ -17,7 +18,7 @@ export interface PillButtonOptions {
 }
 
 const DEFAULTS: Required<PillButtonOptions> = {
-  fontFamily: 'Cinzel Decorative, serif',
+  fontFamily: TITLE_FONT,
   fontSize: '16px',
   textColor: '#150f26',
   bgColor: 0xe8b64f,

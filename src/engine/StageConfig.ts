@@ -44,25 +44,34 @@ export function getStageConfig(stage: number): StageConfig {
 
   const gravityFlipInterval = Math.max(3, 6 - Math.floor((s - 1) / 200));
 
-  // Long three-step ramp: 5 colors for most of the game, 6th unlocks at
-  // stage 200, 7th (the full palette) unlocks at stage 500 — color variety
-  // stays a late-game reveal rather than something exhausted in the first
-  // couple of floors.
-  const colorCount = s >= 500 ? CANDY_TYPE_COUNT : s >= 200 ? Math.min(CANDY_TYPE_COUNT, 6) : Math.min(CANDY_TYPE_COUNT, 5);
+  // Six-step ramp: 5 colors for the early game, then one new color unlocks
+  // every ~140 stages up to the full 10-color palette at stage 700 — color
+  // variety stays a late-game reveal rather than something exhausted in
+  // the first couple of floors.
+  const colorCount = s >= 700 ? CANDY_TYPE_COUNT
+    : s >= 560 ? Math.min(CANDY_TYPE_COUNT, 9)
+    : s >= 420 ? Math.min(CANDY_TYPE_COUNT, 8)
+    : s >= 280 ? Math.min(CANDY_TYPE_COUNT, 7)
+    : s >= 140 ? Math.min(CANDY_TYPE_COUNT, 6)
+    : Math.min(CANDY_TYPE_COUNT, 5);
 
   // Physical obstacles are the actual difficulty driver now that target
-  // score only ramps up to its cap at stage 950 — total density spreads
-  // across nearly the same range (floor 4 through floor ~94) instead of
-  // maxing out by floor 34, so the board keeps getting physically harder
-  // for as long as the score curve is still climbing.
-  const totalObstacles = floor < 4 ? 0 : Math.min(14, Math.round((floor - 4) * (14 / 90)));
+  // score only ramps up to its cap at stage 950. Two-segment ramp: floors
+  // 1-100 (stage 50 is floor 5) used to sit at 0-1 obstacles the whole way,
+  // making the first 100 stages feel empty — now it climbs noticeably
+  // starting floor 5 (stage 41-50) up to 4 by floor 10 (stage 100), then
+  // continues the slower long climb to the floor-94 cap of 14 so late game
+  // keeps getting harder for as long as the score curve is still climbing.
+  const totalObstacles = floor < 5 ? 0
+    : floor <= 10 ? Math.round((floor - 5) * (4 / 5))
+    : Math.min(14, 4 + Math.round((floor - 10) * (10 / 84)));
   const obstacleHp = floor < 30 ? 1 : floor < 60 ? 2 : floor < 90 ? 3 : 4;
 
   // Three kinds, introduced one at a time as the board's capacity for
   // obstacles grows, so each kind gets its own "this is new" moment instead
-  // of all scaling together from floor 4:
+  // of all scaling together from floor 5:
   //  - ice: thaws when a match clears one of its orthogonal neighbors —
-  //    the baseline obstacle, present from floor 4.
+  //    the baseline obstacle, present from floor 5 (stage 41-50).
   //  - chain: can never be swapped and never thaws from a neighbor match —
   //    only clears if a cascade happens to match its own candy directly,
   //    which the player can't engineer on purpose. Introduced floor 20.

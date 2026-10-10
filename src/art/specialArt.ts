@@ -2,7 +2,7 @@ import { ART_SIZE } from '../config/GameConfig';
 
 export type SpecialArtType = 'lineRow' | 'lineCol' | 'crossBomb' | 'colorBomb';
 
-interface SpecialTheme {
+export interface SpecialTheme {
   glow: string;
   light: string;
   dark: string;
@@ -24,7 +24,7 @@ function hexOutline(cx: number, cy: number, r: number): string {
   return pts.join(' ');
 }
 
-function frame(id: string, theme: SpecialTheme, body: string, beforeTile = ''): string {
+export function frame(id: string, theme: SpecialTheme, body: string, beforeTile = ''): string {
   const c = ART_SIZE / 2;
   const r = ART_SIZE * 0.46;
   const hex = hexOutline(c, c, r * 0.92);

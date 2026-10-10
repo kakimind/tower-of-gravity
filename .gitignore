@@ -9,6 +9,11 @@ android/app/build/
 android/capacitor-cordova-android-plugins/build/
 android/local.properties
 
+# Signing secrets — never commit
+android/key.properties
+android/**/*.jks
+android/**/*.keystore
+
 # IDE
 .idea/
 

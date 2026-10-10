@@ -6,7 +6,7 @@
   <title>중력의 탑</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+KR:wght@500;700;900&family=Noto+Serif+JP:wght@500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Noto+Serif+TC:wght@500;700;900&family=Noto+Naskh+Arabic:wght@500;700&family=Noto+Serif+Devanagari:wght@500;700;900&family=Noto+Serif+Thai:wght@500;700;900&family=Noto+Serif:wght@500;600;700;900&display=swap" rel="stylesheet" />
   <style>
     :root {
       --night-950: #150f26;
@@ -18,6 +18,13 @@
       --gold: #e8b64f;
       --violet: #9b6bff;
       --shadow-ink: rgba(10, 6, 24, 0.55);
+      /* Cinzel Decorative / Cormorant Garamond only cover Latin script, so
+         non-Latin languages (ko/ja/zh/ru/ar/hi/th) need a matching-weight
+         fallback chain instead of silently dropping to a thin OS default
+         serif — see the longer note next to TITLE_FONT/BODY_FONT in
+         src/config/GameConfig.ts (the same stacks, used by canvas text). */
+      --font-title: 'Cinzel Decorative', 'Noto Serif KR', 'Noto Serif JP', 'Noto Serif SC', 'Noto Serif TC', 'Noto Naskh Arabic', 'Noto Serif Devanagari', 'Noto Serif Thai', 'Noto Serif', serif;
+      --font-body: 'Cormorant Garamond', 'Noto Serif KR', 'Noto Serif JP', 'Noto Serif SC', 'Noto Serif TC', 'Noto Naskh Arabic', 'Noto Serif Devanagari', 'Noto Serif Thai', 'Noto Serif', serif;
     }
 
     * { box-sizing: border-box; }
@@ -35,7 +42,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       color: var(--parchment);
       background:
         radial-gradient(ellipse 620px 420px at 50% -6%, rgba(155,107,255,0.28) 0%, rgba(155,107,255,0) 70%),
@@ -155,7 +162,7 @@
 
     .title-plaque h1 {
       white-space: nowrap;
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--font-title);
       font-weight: 700;
       font-size: 15px;
       margin: 0;
@@ -199,17 +206,24 @@
     }
 
     .badge .label {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.8px;
       color: #c9bce0;
       text-transform: uppercase;
       text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+      /* Translated labels (e.g. German "ZAUBERSPRÜCHE") can be wider than
+         the badge itself — without a width cap the text spills into the
+         neighboring badges instead of wrapping or shrinking. */
+      max-width: 100%;
+      overflow-wrap: break-word;
+      text-align: center;
+      line-height: 1.1;
     }
 
     .badge .value {
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--font-title);
       font-size: 15px;
       font-weight: 700;
       color: var(--gold);
@@ -222,6 +236,58 @@
     .badge.moves .value { color: #ffa3b2; text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 8px rgba(255,143,163,0.35); }
     .badge.score .value { color: var(--gold); }
     .badge.target .value { color: #8ee89c; text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 8px rgba(126,224,138,0.35); }
+    .badge.items .value { color: #ff9ee0; text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 8px rgba(255,158,224,0.35); }
+
+    /* Dropdown of owned finisher items, anchored under the items badge.
+       Hidden by default; itemBar.ts toggles .open on click. Positioned
+       with a right edge offset rather than centered so it doesn't spill
+       past the HUD's right edge on narrow phones. */
+    .hud-items-popup {
+      display: none;
+      /* Fixed (not absolute) so it escapes .hud's `overflow: hidden` on
+         phone-width viewports (see the max-width:640px block below) — as a
+         child of .badge.items inside .hud, an absolutely-positioned popup
+         extending below the badge got clipped out of existence there.
+         itemBar.ts sets top/right from the button's live bounding rect
+         each time it opens; these are just safe fallback values. */
+      position: fixed;
+      top: 60px;
+      right: 10px;
+      z-index: 40;
+      min-width: 140px;
+      max-width: min(260px, calc(100vw - 20px));
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      border-radius: 10px;
+      background: var(--night-950, #150f26);
+      border: 1px solid rgba(232, 182, 79, 0.45);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+    }
+    .hud-items-popup.open { display: flex; }
+
+    .hud-items-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(232, 182, 79, 0.08);
+      color: #f3e6c8;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+    }
+    .hud-items-row:active { background: rgba(232, 182, 79, 0.22); }
+    .hud-items-icon { font-size: 15px; line-height: 1; flex: 0 0 auto; }
+    /* Long translated labels (e.g. Spanish's bonus-moves text) must wrap
+       instead of forcing the row — and with it the fixed-position popup
+       above it — wider than the viewport on a narrow phone. */
+    .hud-items-label { flex: 1 1 auto; min-width: 0; white-space: normal; line-height: 1.25; }
+    .hud-items-count { color: var(--gold); flex: 0 0 auto; }
 
     .tray {
       position: relative;
@@ -317,7 +383,7 @@
     }
 
     .footer-hint {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       font-size: 12px;
       font-weight: 600;
       font-style: italic;
@@ -357,7 +423,7 @@
     }
 
     .settings-panel h2 {
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--font-title);
       font-size: 18px;
       color: var(--gold);
       margin: 0 0 16px;
@@ -373,7 +439,7 @@
     }
 
     .settings-field label {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       font-size: 13px;
       font-weight: 700;
       color: #d8cdec;
@@ -383,7 +449,7 @@
     }
 
     .settings-field select {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       font-size: 15px;
       font-weight: 600;
       padding: 8px 10px;
@@ -446,7 +512,7 @@
 
     .settings-exit-btn {
       width: 100%;
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--font-title);
       font-size: 14px;
       font-weight: 700;
       color: #150f26;
@@ -467,7 +533,7 @@
 
     .settings-close-btn {
       width: 100%;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       font-size: 14px;
       font-weight: 700;
       color: var(--parchment);
@@ -535,6 +601,11 @@
             <circle cx="12" cy="12" r="1.6" fill="#e8b64f"/>
           </svg>
           <span class="label" data-i18n="hud.target">목표</span><span class="value" id="hud-target">1000</span>
+        </div>
+        <div class="badge items" id="hud-items-btn" style="position: relative; cursor: pointer;">
+          <span class="icon" style="font-size: 17px; line-height: 1; filter: drop-shadow(0 0 4px rgba(232,182,79,0.6));">🎒</span>
+          <span class="label" data-i18n="hud.items">아이템</span><span class="value" id="hud-items-count">0</span>
+          <div class="hud-items-popup" id="hud-items-popup"></div>
         </div>
       </div>
       <div id="app"></div>

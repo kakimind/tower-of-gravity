@@ -1,4 +1,4 @@
-package com.kakimind.topofgravity;
+package com.kakimind.topgravity;
 
 import com.getcapacitor.BridgeActivity;
 

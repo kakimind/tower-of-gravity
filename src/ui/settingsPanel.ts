@@ -40,7 +40,9 @@ function fitTitleToBox(): void {
 function applyTranslations(): void {
   document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
     const key = el.getAttribute('data-i18n');
-    if (!key) return;
+    // footerHint needs a {n} substitution the generic loop can't supply —
+    // the active scene re-sets it itself via the game:language-changed listener below.
+    if (!key || key === 'footerHint') return;
     el.textContent = t(key as Parameters<typeof t>[0]);
   });
   fitTitleToBox();
@@ -81,6 +83,7 @@ export function initSettingsPanel(): void {
   languageSelect.addEventListener('change', () => {
     setLanguage(languageSelect.value);
     applyTranslations();
+    window.dispatchEvent(new CustomEvent('game:language-changed'));
   });
 
   sfxToggle.addEventListener('change', () => {

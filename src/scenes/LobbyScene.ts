@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
-import { GRID_SIZE, TILE, UI_SCALE, ART_SIZE } from '../config/GameConfig';
+import { GRID_SIZE, TILE, UI_SCALE, ART_SIZE, TITLE_FONT, BODY_FONT } from '../config/GameConfig';
 import { TOTAL_STAGES, SPECIAL_UNLOCK_FLOOR, isSpecialUnlocked } from '../engine/StageConfig';
 import {
   getCurrentStage, getUnlockedStage, getCurrency, addCurrency,
-  trySpendCurrency, getBoosts, addBonusMovesBoost, addSpecialBoost,
+  trySpendCurrency, getBonusMovesInventory, getSpecialInventory, addBonusMovesBoost, addSpecialBoost, addNukeBoost, getNukeInventory,
   getHearts, addHearts, getMsUntilNextHeart, HEART_MAX,
 } from '../engine/Progress';
 import { buildSpecialSvg, specialTextureKey, SpecialArtType, SPECIAL_THEMES } from '../art/specialArt';
+import { buildNukeSvg, nukeTextureKey, NukeType, NUKE_THEMES } from '../art/nukeArt';
 import { svgToDataUri } from '../art/candyArt';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
@@ -22,14 +23,35 @@ interface SpecialShopItem {
 }
 
 const SPECIAL_SHOP_ITEMS: SpecialShopItem[] = [
-  { type: 'lineRow', labelKey: 'item.lineRow', price: 35 },
-  { type: 'lineCol', labelKey: 'item.lineCol', price: 35 },
-  { type: 'crossBomb', labelKey: 'item.crossBomb', price: 65 },
-  { type: 'colorBomb', labelKey: 'item.colorBomb', price: 110 },
+  { type: 'lineRow', labelKey: 'item.lineRow', price: 40 },
+  { type: 'lineCol', labelKey: 'item.lineCol', price: 40 },
+  { type: 'crossBomb', labelKey: 'item.crossBomb', price: 70 },
+  { type: 'colorBomb', labelKey: 'item.colorBomb', price: 115 },
 ];
 
 const SPECIAL_LABEL_KEYS: Record<SpecialArtType, 'item.lineRow' | 'item.lineCol' | 'item.crossBomb' | 'item.colorBomb'> = {
   lineRow: 'item.lineRow', lineCol: 'item.lineCol', crossBomb: 'item.crossBomb', colorBomb: 'item.colorBomb',
+};
+
+interface NukeShopItem {
+  type: NukeType;
+  labelKey: 'item.bomb' | 'item.blackHole' | 'item.lightning' | 'item.meteor';
+  price: number;
+}
+
+// Finisher items: used on demand mid-stage from the HUD item bag, targeted
+// at a tile like the hand-placed specials — see GameScene.beginUseNukeItem.
+// Priced above the hand-placed specials since each one clears a much
+// bigger chunk of the board in one shot.
+const NUKE_SHOP_ITEMS: NukeShopItem[] = [
+  { type: 'bomb', labelKey: 'item.bomb', price: 130 },
+  { type: 'lightning', labelKey: 'item.lightning', price: 150 },
+  { type: 'meteor', labelKey: 'item.meteor', price: 160 },
+  { type: 'blackHole', labelKey: 'item.blackHole', price: 180 },
+];
+
+const NUKE_LABEL_KEYS: Record<NukeType, 'item.bomb' | 'item.blackHole' | 'item.lightning' | 'item.meteor'> = {
+  bomb: 'item.bomb', blackHole: 'item.blackHole', lightning: 'item.lightning', meteor: 'item.meteor',
 };
 
 const W = GRID_SIZE * TILE;
@@ -42,6 +64,8 @@ export class LobbyScene extends Phaser.Scene {
   private heartsText?: Phaser.GameObjects.Text;
   private heartsTimerText?: Phaser.GameObjects.Text;
   private shopGroup?: Phaser.GameObjects.Container;
+  private shopTab: 'special' | 'nuke' = 'special';
+  private languageListener?: () => void;
 
   constructor() {
     super('LobbyScene');
@@ -53,12 +77,22 @@ export class LobbyScene extends Phaser.Scene {
       const svg = buildSpecialSvg(item.type);
       this.load.svg(specialTextureKey(item.type), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
     });
+    NUKE_SHOP_ITEMS.forEach((item) => {
+      if (this.textures.exists(nukeTextureKey(item.type))) return;
+      const svg = buildNukeSvg(item.type);
+      this.load.svg(nukeTextureKey(item.type), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
+    });
   }
 
   create(): void {
     setCurrentSceneKey('LobbyScene');
     document.querySelector('.hud')?.setAttribute('style', 'display:none');
     document.querySelector('.footer-hint')?.setAttribute('style', 'display:none');
+    this.languageListener = () => this.scene.restart();
+    window.addEventListener('game:language-changed', this.languageListener);
+    this.events.once('shutdown', () => {
+      if (this.languageListener) window.removeEventListener('game:language-changed', this.languageListener);
+    });
 
     this.cameras.main.setBackgroundColor('#1a1330');
 
@@ -75,7 +109,7 @@ export class LobbyScene extends Phaser.Scene {
     const floor = Math.ceil(stage / 10);
 
     this.add.text(W / 2, 20 * S, t('lobby.floorStage', { floor, stage, total: TOTAL_STAGES }), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#e4dcf5',
+      fontFamily: BODY_FONT, fontSize: `${12 * S}px`, fontStyle: '700', color: '#e4dcf5',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0.5);
 
@@ -91,7 +125,7 @@ export class LobbyScene extends Phaser.Scene {
     const statusTop = 34 * S;
     const statusH = 30 * S;
     const currencyStr = t('lobby.currency', { n: getCurrency() });
-    const measure = this.add.text(0, 0, currencyStr, { fontFamily: 'Cinzel Decorative, serif', fontSize: `${13 * S}px` });
+    const measure = this.add.text(0, 0, currencyStr, { fontFamily: TITLE_FONT, fontSize: `${13 * S}px` });
     const currencySegW = Math.max(110 * S, measure.width + 36 * S);
     measure.destroy();
     const heartsSegW = 150 * S;
@@ -110,7 +144,7 @@ export class LobbyScene extends Phaser.Scene {
     const statusCenterY = statusTop + statusH / 2;
     const currencyX = pillLeft + currencySegW / 2;
     this.currencyText = this.add.text(currencyX, statusCenterY, currencyStr, {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${13 * S}px`, color: '#fff3c4',
+      fontFamily: TITLE_FONT, fontSize: `${13 * S}px`, color: '#fff3c4',
       stroke: '#0a0618', strokeThickness: 4 * S,
     }).setOrigin(0.5);
 
@@ -125,7 +159,7 @@ export class LobbyScene extends Phaser.Scene {
     });
 
     this.heartsText = this.add.text(dividerX + heartsSegW / 2, statusCenterY, '', {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
+      fontFamily: BODY_FONT, fontSize: `${12 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0.5);
 
@@ -133,14 +167,14 @@ export class LobbyScene extends Phaser.Scene {
     // to the heart icons — the icons stay fixed-width in the status bar's
     // right segment, and this line only appears while hearts are missing.
     this.heartsTimerText = this.add.text(W / 2, statusTop + statusH + 12 * S, '', {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${10 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
+      fontFamily: BODY_FONT, fontSize: `${10 * S}px`, fontStyle: '700', color: '#ffb3c0', align: 'center',
       stroke: '#0a0618', strokeThickness: 2.5 * S,
     }).setOrigin(0.5);
     this.refreshHearts();
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.refreshHearts() });
 
     this.boostText = this.add.text(W / 2, statusTop + statusH + 28 * S, '', {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${11 * S}px`, fontStyle: '700', color: '#9df0ac', align: 'center',
+      fontFamily: BODY_FONT, fontSize: `${11 * S}px`, fontStyle: '700', color: '#9df0ac', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
       wordWrap: { width: W - 40 * S },
       lineSpacing: 2 * S,
@@ -164,7 +198,7 @@ export class LobbyScene extends Phaser.Scene {
     });
 
     const shopBtn = createPillButton(this, W / 2, H - 32 * S, t('lobby.shop'), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${15 * S}px`, textColor: '#f3e6c8',
+      fontFamily: TITLE_FONT, fontSize: `${15 * S}px`, textColor: '#f3e6c8',
       bgColor: 0x3a2a5c, strokeColor: 0x7a5bb5, strokeAlpha: 1, strokeWidth: 2 * S,
       paddingX: 20 * S, paddingY: 9 * S, minWidth: ctaWidth, depth: 5,
     });
@@ -436,7 +470,7 @@ export class LobbyScene extends Phaser.Scene {
     const overlay = this.add.rectangle(cx, cy, W, H, 0x0a0618, 0.75).setDepth(58).setInteractive();
     const panel = drawPanel(this, cx, cy, W - 80 * S, 150 * S, { radius: 16 * S, strokeWidth: 2 * S, depth: 59 });
     const text = this.add.text(cx, cy - 30 * S, message, {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
+      fontFamily: BODY_FONT, fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
       wordWrap: { width: W - 120 * S },
     }).setOrigin(0.5).setDepth(59);
@@ -445,7 +479,7 @@ export class LobbyScene extends Phaser.Scene {
       fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 59,
     });
     const noBtn = createPillButton(this, cx + 55 * S, cy + 40 * S, t('common.cancel'), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, textColor: '#f3e6c8',
+      fontFamily: BODY_FONT, fontSize: `${13 * S}px`, textColor: '#f3e6c8',
       bgColor: 0x3a2a5c, paddingX: 16 * S, paddingY: 8 * S, depth: 59,
     });
 
@@ -465,14 +499,35 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private refreshBoostText(): void {
-    const boosts = getBoosts();
+    const bonusMovesOwned = getBonusMovesInventory();
+    const specialOwned = getSpecialInventory();
     const parts: string[] = [];
-    if (boosts.bonusMovesOwned > 0) parts.push(t('lobby.boostBonusMoves', { n: boosts.bonusMovesOwned }));
+    if (bonusMovesOwned > 0) parts.push(t('lobby.boostBonusMoves', { n: bonusMovesOwned }));
     (Object.keys(SPECIAL_LABEL_KEYS) as SpecialArtType[]).forEach((type) => {
-      const count = boosts.specialOwned[type];
+      const count = specialOwned[type];
       if (count > 0) parts.push(`${t(SPECIAL_LABEL_KEYS[type])} x${count}`);
     });
-    this.boostText?.setText(parts.length ? t('lobby.boostOwned', { items: parts.join(' · ') }) : '');
+    const nukeInventory = getNukeInventory();
+    (Object.keys(NUKE_LABEL_KEYS) as NukeType[]).forEach((type) => {
+      const count = nukeInventory[type];
+      if (count > 0) parts.push(`${t(NUKE_LABEL_KEYS[type])} x${count}`);
+    });
+    if (!this.boostText) return;
+    const full = parts.length ? t('lobby.boostOwned', { items: parts.join(' · ') }) : '';
+    // A player who has bought every boost type produces a long list that can
+    // wrap to 3+ lines at the default size — the last line then becomes a
+    // lone orphaned word (e.g. just "x2") dangling well below the status bar,
+    // overlapping the tower artwork. Shrink the font until it settles into
+    // at most ~2 lines' worth of height instead of letting it sprawl.
+    const maxBoostH = 44 * S;
+    const floorFontPx = 8 * S;
+    let fontPx = 11 * S;
+    this.boostText.setFontSize(fontPx);
+    this.boostText.setText(full);
+    while (this.boostText.height > maxBoostH && fontPx > floorFontPx) {
+      fontPx -= 1 * S;
+      this.boostText.setFontSize(fontPx);
+    }
   }
 
   private toggleShop(): void {
@@ -498,16 +553,47 @@ export class LobbyScene extends Phaser.Scene {
     children.push(panel);
 
     const title = this.add.text(cx, cy - 160 * S, t('lobby.shopTitle'), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${18 * S}px`, color: '#e8b64f',
+      fontFamily: TITLE_FONT, fontSize: `${18 * S}px`, color: '#e8b64f',
       stroke: '#0a0618', strokeThickness: 4 * S,
     }).setOrigin(0.5);
     children.push(title);
 
-    const rowGap = 38 * S;
-    let rowY = cy - 122 * S;
+    // Special (hand-placed) and nuke (instant finisher) items share the same
+    // list of 4 rows and don't fit on screen together, so they page between
+    // each other with arrows instead of needing a scrollable panel — reuses
+    // the exact row geometry that already fits 6 rows.
+    const PAGES: Array<'special' | 'nuke'> = ['special', 'nuke'];
+    const pageIndex = PAGES.indexOf(this.shopTab);
+    const goToPage = (index: number) => {
+      const next = PAGES[(index + PAGES.length) % PAGES.length];
+      if (next === this.shopTab) return;
+      this.shopTab = next;
+      this.shopGroup?.destroy(true);
+      this.shopGroup = undefined;
+      this.buildShop();
+    };
+    const pageLabel = this.add.text(cx, cy - 124 * S, t(this.shopTab === 'special' ? 'lobby.shopTabSpecial' : 'lobby.shopTabNuke'), {
+      fontFamily: BODY_FONT, fontSize: `${14 * S}px`, fontStyle: '700', color: '#ffe9a8',
+      stroke: '#0a0618', strokeThickness: 3 * S,
+    }).setOrigin(0.5);
+    const pageDots = this.add.text(cx, cy - 108 * S, PAGES.map((_, i) => (i === pageIndex ? '●' : '○')).join(' '), {
+      fontFamily: BODY_FONT, fontSize: `${9 * S}px`, color: '#8a7aa8',
+    }).setOrigin(0.5);
+    const arrowLeft = this.add.text(cx - 140 * S, cy - 124 * S, '◀', {
+      fontFamily: BODY_FONT, fontSize: `${16 * S}px`, color: '#e8b64f',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    arrowLeft.on('pointerdown', () => goToPage(pageIndex - 1));
+    const arrowRight = this.add.text(cx + 140 * S, cy - 124 * S, '▶', {
+      fontFamily: BODY_FONT, fontSize: `${16 * S}px`, color: '#e8b64f',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    arrowRight.on('pointerdown', () => goToPage(pageIndex + 1));
+    children.push(pageLabel, pageDots, arrowLeft, arrowRight);
 
-    const rowMoves = this.buildShopRow(cx, rowY, t('lobby.shopMovesLabel'), t('lobby.priceStardust', { n: 40 }), () => {
-      if (trySpendCurrency(40)) {
+    const rowGap = 38 * S;
+    let rowY = cy - 90 * S;
+
+    const rowMoves = this.buildShopRow(cx, rowY, t('lobby.shopMovesLabel'), t('lobby.priceStardust', { n: 45 }), () => {
+      if (trySpendCurrency(45)) {
         addBonusMovesBoost();
         this.refreshAll();
       } else {
@@ -518,19 +604,30 @@ export class LobbyScene extends Phaser.Scene {
     rowY += rowGap;
 
     const unlockedStage = getUnlockedStage();
-    SPECIAL_SHOP_ITEMS.forEach((item) => {
+    const currentItems = this.shopTab === 'special'
+      ? SPECIAL_SHOP_ITEMS.map((item) => ({
+        label: t(item.labelKey), price: item.price,
+        textureKey: specialTextureKey(item.type), glow: SPECIAL_THEMES[item.type].glow,
+        locked: isSpecialUnlocked(item.type, unlockedStage) ? undefined : { floor: SPECIAL_UNLOCK_FLOOR[item.type] },
+        buy: () => addSpecialBoost(item.type),
+      }))
+      : NUKE_SHOP_ITEMS.map((item) => ({
+        label: t(item.labelKey), price: item.price,
+        textureKey: nukeTextureKey(item.type), glow: NUKE_THEMES[item.type].glow,
+        locked: undefined as { floor: number } | undefined,
+        buy: () => addNukeBoost(item.type),
+      }));
+    currentItems.forEach((item) => {
       const thisRowY = rowY;
-      const unlocked = isSpecialUnlocked(item.type, unlockedStage);
-      const row = this.buildShopRow(cx, thisRowY, t(item.labelKey), t('lobby.priceStardust', { n: item.price }), () => {
+      const row = this.buildShopRow(cx, thisRowY, item.label, t('lobby.priceStardust', { n: item.price }), () => {
         if (trySpendCurrency(item.price)) {
-          addSpecialBoost(item.type);
+          item.buy();
           this.refreshAll();
         } else {
           this.flashInsufficient(cx, thisRowY + 18 * S);
         }
       }, {
-        textureKey: specialTextureKey(item.type), glowColor: SPECIAL_THEMES[item.type].glow,
-        locked: unlocked ? undefined : { floor: SPECIAL_UNLOCK_FLOOR[item.type] },
+        textureKey: item.textureKey, glowColor: item.glow, locked: item.locked,
       });
       children.push(...row);
       rowY += rowGap;
@@ -543,7 +640,7 @@ export class LobbyScene extends Phaser.Scene {
     rowY += rowGap;
 
     const closeBtn = createPillButton(this, cx, rowY + 6 * S, t('settings.close'), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, textColor: '#f3e6c8',
+      fontFamily: BODY_FONT, fontSize: `${14 * S}px`, textColor: '#f3e6c8',
       bgColor: 0x3a2a5c, paddingX: 16 * S, paddingY: 6 * S,
     });
     closeBtn.on('pointerdown', () => this.toggleShop());
@@ -590,35 +687,108 @@ export class LobbyScene extends Phaser.Scene {
     }
 
     const labelText = this.add.text(labelX, cy, label, {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, fontStyle: '700',
+      fontFamily: BODY_FONT, fontSize: `${14 * S}px`, fontStyle: '700',
       color: locked ? '#8a7aa8' : '#f3e6c8',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0, 0.5);
     items.push(labelText);
 
+    const panelRight = cx + (W - 40 * S) / 2 - 14 * S;
+
     if (locked) {
       // Locked rows show where the item unlocks instead of a buy button —
-      // no interaction, just a preview of what's still ahead.
+      // no interaction, just a preview of what's still ahead. Cap the wrap
+      // width to the panel's actual right edge (not a flat guess) so longer
+      // translations of "unlocks at floor N" wrap instead of spilling past it.
+      const lockMaxWidth = Math.max(60 * S, (panelRight - (cx + 150 * S) - 4 * S) * 2);
+      // 10*S (not 11*S): at 3 wrapped lines (e.g. Spanish "Se desbloquea
+      // en el piso N"), 11*S's line height ran taller than the 38*S row
+      // gap, crowding the label right up against the neighboring row.
       const lockLabel = this.add.text(cx + 150 * S, cy, `🔒 ${t('lobby.unlocksAtFloor', { floor: locked.floor })}`, {
-        fontFamily: 'Cormorant Garamond, serif', fontSize: `${11 * S}px`, fontStyle: '700', color: '#8a7aa8',
-        align: 'center', wordWrap: { width: 130 * S },
+        fontFamily: BODY_FONT, fontSize: `${10 * S}px`, fontStyle: '700', color: '#8a7aa8',
+        align: 'center', wordWrap: { width: lockMaxWidth },
       }).setOrigin(0.5);
       items.push(lockLabel);
+      this.fitShopRowLabel(labelText, cx + 150 * S - lockLabel.width / 2, labelX);
       return items;
     }
 
-    const buyBtn = createPillButton(this, cx + 150 * S, cy, price, {
-      fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 12 * S, paddingY: 7 * S,
-    });
+    const buyBtn = this.createFittingPricePill(cx + 150 * S, cy, price, panelRight);
     buyBtn.on('pointerdown', onBuy);
     items.push(buyBtn);
+
+    this.fitShopRowLabel(labelText, buyBtn.x - buyBtn.displayWidth / 2, labelX);
 
     return items;
   }
 
+  // Long currency names (e.g. Italian's "Polvere di stelle") can make the
+  // price pill wider than the shop panel itself, clipping its right edge.
+  // Shrink the pill's font until it fits inside the panel before placing it.
+  //
+  // createPillButton's pill is a full capsule (corner radius = height / 2),
+  // so paddingX needs to stay close to that radius or the text's corners
+  // sit inside the curved cap instead of the straight run — it reads as
+  // text crammed into the curve even though nothing is technically clipped
+  // (this is what was bothering long strings like Spanish "POLVO ESTELAR").
+  // paddingY is fixed, so keep paddingX fixed too instead of shrinking it
+  // alongside the font — let the font shrink further on long strings
+  // rather than tightening the one margin that keeps the pill readable.
+  private createFittingPricePill(x: number, cy: number, price: string, maxRight: number): Phaser.GameObjects.Container {
+    const maxWidth = (maxRight - x) * 2;
+    const MIN_FONT = 10 * S;
+    const ROOMY_PADDING_X = 14 * S;
+    const TIGHT_PADDING_X = 9 * S;
+    let fontSize = 14 * S;
+    let paddingX = ROOMY_PADDING_X;
+    let btn = createPillButton(this, x, cy, price, {
+      fontSize: `${fontSize}px`, bgColor: 0xe8b64f, paddingX, paddingY: 7 * S,
+    });
+    // First pass: shrink the font only, keeping paddingX roomy enough that
+    // text doesn't crowd into the capsule's rounded ends (paddingX needs to
+    // stay close to the cap's radius — see note above).
+    while (btn.displayWidth > maxWidth && fontSize > MIN_FONT) {
+      fontSize -= 0.5 * S;
+      btn.destroy(true);
+      btn = createPillButton(this, x, cy, price, {
+        fontSize: `${fontSize}px`, bgColor: 0xe8b64f, paddingX, paddingY: 7 * S,
+      });
+    }
+    // Still wider than the shop panel even at the smallest readable font
+    // (e.g. Spanish "POLVO ESTELAR") — staying within the panel's edge
+    // matters more than the roomy padding, so fall back to tightening it.
+    if (btn.displayWidth > maxWidth) {
+      paddingX = TIGHT_PADDING_X;
+      btn.destroy(true);
+      btn = createPillButton(this, x, cy, price, {
+        fontSize: `${fontSize}px`, bgColor: 0xe8b64f, paddingX, paddingY: 7 * S,
+      });
+    }
+    return btn;
+  }
+
+  // Long translated labels (e.g. Spanish's "+3 movimientos en la próxima
+  // partida") can run wider than the gap between the label's start and the
+  // price pill, overlapping it. Shrink the font first; if it's still too
+  // wide even at the readable floor, wrap it onto a second line instead of
+  // shrinking further into illegibility — a two-line label beats a hidden one.
+  private fitShopRowLabel(labelText: Phaser.GameObjects.Text, rightEdge: number, leftEdge: number): void {
+    const maxWidth = rightEdge - leftEdge - 6 * S;
+    if (maxWidth <= 0 || labelText.width <= maxWidth) return;
+    const MIN_FONT = 10 * S;
+    let fontSize = 14 * S;
+    while (labelText.width > maxWidth && fontSize > MIN_FONT) {
+      fontSize -= 0.5 * S;
+      labelText.setFontSize(fontSize);
+    }
+    if (labelText.width > maxWidth) {
+      labelText.setWordWrapWidth(maxWidth, true);
+    }
+  }
+
   private flashInsufficient(x: number, y: number): void {
     const txt = this.add.text(x, y, t('lobby.insufficientCurrency'), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${12 * S}px`, fontStyle: '700', color: '#ff9d9d',
+      fontFamily: BODY_FONT, fontSize: `${12 * S}px`, fontStyle: '700', color: '#ff9d9d',
       stroke: '#0a0618', strokeThickness: 3 * S,
     }).setOrigin(0.5).setDepth(51);
     this.tweens.add({
@@ -644,7 +814,7 @@ export class LobbyScene extends Phaser.Scene {
   private spawnRewardPopup(x: number, y: number, text: string, sound: () => void = playReward): void {
     sound();
     const txt = this.add.text(x, y, text, {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${22 * S}px`, color: '#e8b64f',
+      fontFamily: TITLE_FONT, fontSize: `${22 * S}px`, color: '#e8b64f',
       stroke: '#150f26', strokeThickness: 5,
     }).setOrigin(0.5).setDepth(61).setScale(0.5).setAlpha(0);
     this.tweens.add({

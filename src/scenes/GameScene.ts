@@ -1,17 +1,22 @@
 import Phaser from 'phaser';
 import {
   GRID_SIZE, TILE, CANDY_DISPLAY, CANDY_TYPE_COUNT, ART_SIZE, SCORE_PER_CANDY, UI_SCALE,
+  TITLE_FONT, BODY_FONT,
 } from '../config/GameConfig';
 
 const S = UI_SCALE;
 import { buildCandySvg, svgToDataUri, candyTextureKey, CANDY_PALETTES } from '../art/candyArt';
-import { buildSpecialSvg, specialTextureKey, SpecialArtType } from '../art/specialArt';
+import { buildSpecialSvg, specialTextureKey, SpecialArtType, SPECIAL_THEMES } from '../art/specialArt';
+import { buildNukeSvg, nukeTextureKey, NukeType, NUKE_THEMES } from '../art/nukeArt';
+import { TranslationKey } from '../i18n/translations';
 import { buildInitialTypeGrid, findMatchedCells, findLongRuns, findHintSwap, isAdjacent, randomType } from '../engine/BoardModel';
 import { Direction, nextDirection, DIRECTION_ARROW } from '../engine/Gravity';
 import { getStageConfig, TOTAL_STAGES, ObstacleKind } from '../engine/StageConfig';
 import {
-  getCurrentStage, setCurrentStage, completeStage, consumeBoosts, addCurrency, spendHeart,
+  getCurrentStage, setCurrentStage, completeStage, addCurrency, spendHeart,
+  useNukeItem, useBonusMovesItem, useSpecialItem,
 } from '../engine/Progress';
+import { refreshItemBar } from '../ui/itemBar';
 import { getStageIntro, getFloor, rollRandomEvent, EventItem } from '../data/story';
 import { t } from '../i18n';
 import { createPillButton } from '../ui/PillButton';
@@ -26,6 +31,10 @@ import {
 const DIRECTION_KEY = {
   down: 'direction.down', left: 'direction.left', up: 'direction.up', right: 'direction.right',
 } as const;
+
+const NUKE_LABEL_KEYS: Record<NukeType, TranslationKey> = {
+  bomb: 'item.bomb', blackHole: 'item.blackHole', lightning: 'item.lightning', meteor: 'item.meteor',
+};
 
 function range(from: number, to: number): number[] {
   const out: number[] = [];
@@ -74,10 +83,17 @@ export class GameScene extends Phaser.Scene {
   private idleEvent?: Phaser.Time.TimerEvent;
   private pendingSpecialQueue: SpecialType[] = [];
   private exitListener?: () => void;
+  private useNukeListener?: (e: Event) => void;
+  private useSpecialListener?: (e: Event) => void;
+  private useBonusMovesListener?: () => void;
+  private languageListener?: () => void;
   private placingSpecials = 0;
   private eventGrantedSpecials = 0;
   private placementActive = false;
   private placementQueue: SpecialType[] = [];
+  private placementMode: 'special' | 'nuke' | 'specialItem' = 'special';
+  private targetingNukeType: NukeType | null = null;
+  private targetingSpecialType: SpecialType | null = null;
   private gravityBanner?: Phaser.GameObjects.Text;
   private gravityBannerBg?: Phaser.GameObjects.Graphics;
   private endText?: Phaser.GameObjects.Text;
@@ -90,13 +106,13 @@ export class GameScene extends Phaser.Scene {
     this.stage = data?.stage ?? getCurrentStage();
     setCurrentStage(this.stage);
     const cfg = getStageConfig(this.stage);
-    const boosts = consumeBoosts();
     this.targetScore = cfg.targetScore;
-    this.movesRemaining = cfg.movesLimit + boosts.bonusMovesOwned * 3;
-    const specialOrder: SpecialType[] = ['lineRow', 'lineCol', 'crossBomb', 'colorBomb'];
-    this.pendingSpecialQueue = specialOrder.flatMap(
-      (type) => Array<SpecialType>(boosts.specialOwned[type]).fill(type),
-    );
+    // Shop-bought bonus-moves/specials/nukes are all standing bag inventory
+    // now (see Progress.ts) — used on demand mid-stage via the HUD item
+    // button, not auto-applied or force-placed at stage start. Only a
+    // random mid-stage event still pushes straight into pendingSpecialQueue
+    // (see grantEventItem) for its instant-placement-card flow.
+    this.movesRemaining = cfg.movesLimit;
     this.gravityFlipInterval = cfg.gravityFlipInterval;
     this.colorCount = cfg.colorCount;
     this.iceCount = cfg.iceCount;
@@ -116,6 +132,9 @@ export class GameScene extends Phaser.Scene {
     this.eventGrantedSpecials = 0;
     this.placementActive = false;
     this.placementQueue = [];
+    this.placementMode = 'special';
+    this.targetingNukeType = null;
+    this.targetingSpecialType = null;
   }
 
   preload(): void {
@@ -134,6 +153,11 @@ export class GameScene extends Phaser.Scene {
       if (this.textures.exists(specialTextureKey(type))) return;
       const svg = buildSpecialSvg(type);
       this.load.svg(specialTextureKey(type), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
+    });
+    (['bomb', 'blackHole', 'lightning', 'meteor'] as NukeType[]).forEach((type) => {
+      if (this.textures.exists(nukeTextureKey(type))) return;
+      const svg = buildNukeSvg(type);
+      this.load.svg(nukeTextureKey(type), svgToDataUri(svg), { width: ART_SIZE, height: ART_SIZE });
     });
   }
 
@@ -188,7 +212,7 @@ export class GameScene extends Phaser.Scene {
     }).setAlpha(0);
 
     this.gravityBanner = this.add.text(GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2, '', {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${18 * S}px`,
       color: '#e8c977',
       align: 'center',
@@ -198,13 +222,38 @@ export class GameScene extends Phaser.Scene {
     setCurrentSceneKey('GameScene');
     this.exitListener = () => this.confirmExitToLobby();
     window.addEventListener('game:exit-to-lobby', this.exitListener);
+    this.useNukeListener = (e: Event) => {
+      const type = (e as CustomEvent<{ type: NukeType }>).detail?.type;
+      if (type) this.beginUseNukeItem(type);
+    };
+    window.addEventListener('game:use-nuke', this.useNukeListener);
+    this.useSpecialListener = (e: Event) => {
+      const type = (e as CustomEvent<{ type: SpecialType }>).detail?.type;
+      if (type) this.beginUseSpecialItem(type);
+    };
+    window.addEventListener('game:use-special', this.useSpecialListener);
+    this.useBonusMovesListener = () => this.beginUseBonusMoves();
+    window.addEventListener('game:use-bonusmoves', this.useBonusMovesListener);
+    this.languageListener = () => {
+      const hint = document.querySelector<HTMLElement>('.footer-hint');
+      if (hint) hint.textContent = t('footerHint', { n: this.gravityFlipInterval });
+    };
+    window.addEventListener('game:language-changed', this.languageListener);
     this.events.once('shutdown', () => {
       if (this.exitListener) window.removeEventListener('game:exit-to-lobby', this.exitListener);
+      if (this.useNukeListener) window.removeEventListener('game:use-nuke', this.useNukeListener);
+      if (this.useSpecialListener) window.removeEventListener('game:use-special', this.useSpecialListener);
+      if (this.useBonusMovesListener) window.removeEventListener('game:use-bonusmoves', this.useBonusMovesListener);
+      if (this.languageListener) window.removeEventListener('game:language-changed', this.languageListener);
     });
+    refreshItemBar();
 
     this.updateHud();
     this.armIdleTimer();
+    this.startStageIntro();
+  }
 
+  private startStageIntro(): void {
     const intro = getStageIntro(this.stage);
     if (intro) {
       this.busy = true;
@@ -214,6 +263,433 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.maybeTriggerRandomEvent();
     }
+  }
+
+  // "Finisher" items bought in the shop (bomb/blackHole/lightning/meteor):
+  // unlike lineRow/lineCol/crossBomb/colorBomb, which promote in place as a
+  // special candy, these sit in a standing inventory and are used on demand
+  // mid-stage via the HUD items button (see beginUseNukeItem below), then
+  // player-targeted the same way specials are placed. The blast feeds its
+  // cell set into the existing resolveCascade(forcedCells) pipeline — the
+  // same path specials use — so scoring, obstacle damage, cascades and
+  // gravity refill all come for free instead of a parallel clear/score path.
+  private forceDestroyObstaclesIn(cells: Set<string>): void {
+    cells.forEach((key) => {
+      const [r, c] = key.split(',').map(Number);
+      const kind = this.obstacleType[r][c];
+      if (kind) this.clearObstacle(r, c, GameScene.OBSTACLE_STYLE[kind].fill);
+    });
+  }
+
+  private randomCell(): Cell {
+    return { row: Math.floor(Math.random() * GRID_SIZE), col: Math.floor(Math.random() * GRID_SIZE) };
+  }
+
+  // Keeps a blast center at least `margin` cells from every edge so a
+  // fixed-size blast (e.g. a 5x5 bomb) always lands at its full size instead
+  // of getting silently clipped when the center lands near a wall — used
+  // both for the random fallback and to nudge a player-tapped target that
+  // landed too close to an edge.
+  private randomCellAwayFromEdge(margin: number): Cell {
+    const lo = Math.min(margin, GRID_SIZE - 1);
+    const hi = Math.max(lo, GRID_SIZE - 1 - margin);
+    const span = hi - lo + 1;
+    return {
+      row: lo + Math.floor(Math.random() * span),
+      col: lo + Math.floor(Math.random() * span),
+    };
+  }
+
+  private clampAwayFromEdge(cell: Cell, margin: number): Cell {
+    const lo = Math.min(margin, GRID_SIZE - 1);
+    const hi = Math.max(lo, GRID_SIZE - 1 - margin);
+    return { row: Math.min(hi, Math.max(lo, cell.row)), col: Math.min(hi, Math.max(lo, cell.col)) };
+  }
+
+  private addSquareBlast(out: Set<string>, center: Cell, radius: number): void {
+    for (let r = center.row - radius; r <= center.row + radius; r++) {
+      for (let c = center.col - radius; c <= center.col + radius; c++) {
+        if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) out.add(`${r},${c}`);
+      }
+    }
+  }
+
+  // `primary` is the cell the player tapped to aim this item (see
+  // finishNukeTargetAt); omitted only for the no-target-UI edge case.
+  // `centers` are the actual impact points (post edge-clamp/spread) so the
+  // projectile-flight animation can fly to exactly where the blast lands.
+  private buildNukeCells(type: NukeType, primary?: Cell): { cells: Set<string>; centers: Cell[] } {
+    const out = new Set<string>();
+    const centers: Cell[] = [];
+    if (type === 'bomb') {
+      // One big 5x5 crater right where the player aimed.
+      const center = this.clampAwayFromEdge(primary ?? this.randomCell(), 2);
+      centers.push(center);
+      this.addSquareBlast(out, center, 2);
+    } else if (type === 'blackHole') {
+      // Pulls in ~60% of a 7x7 region around the targeted point, scattered
+      // at random within it rather than a solid block — the "pulls from
+      // everywhere nearby" feel, but still clearly centered on the target.
+      const focus = primary ?? this.randomCell();
+      centers.push(focus);
+      const pool: Cell[] = [];
+      for (let r = focus.row - 3; r <= focus.row + 3; r++) {
+        for (let c = focus.col - 3; c <= focus.col + 3; c++) {
+          if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) pool.push({ row: r, col: c });
+        }
+      }
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      pool.slice(0, Math.round(pool.length * 0.6)).forEach((cell) => out.add(`${cell.row},${cell.col}`));
+    } else if (type === 'lightning') {
+      // The targeted cell's row and column are always struck; a second
+      // random row and column round it out to the usual two of each.
+      const rows = new Set<number>();
+      const cols = new Set<number>();
+      if (primary) { rows.add(primary.row); cols.add(primary.col); centers.push(primary); }
+      while (rows.size < 2) rows.add(Math.floor(Math.random() * GRID_SIZE));
+      while (cols.size < 2) cols.add(Math.floor(Math.random() * GRID_SIZE));
+      if (centers.length === 0) centers.push({ row: [...rows][0], col: [...cols][0] });
+      rows.forEach((r) => { for (let c = 0; c < GRID_SIZE; c++) out.add(`${r},${c}`); });
+      cols.forEach((c) => { for (let r = 0; r < GRID_SIZE; r++) out.add(`${r},${c}`); });
+    } else {
+      // Four 3x3 impacts: the first lands right on the target, the other
+      // three scatter nearby (kept spread apart so none swallow another).
+      const list: Cell[] = [];
+      if (primary) list.push(this.clampAwayFromEdge(primary, 1));
+      let guard = 0;
+      while (list.length < 4 && guard < 40) {
+        guard += 1;
+        const candidate = this.randomCellAwayFromEdge(1);
+        if (list.some((p) => Math.abs(p.row - candidate.row) + Math.abs(p.col - candidate.col) < 3)) continue;
+        list.push(candidate);
+      }
+      while (list.length < 4) list.push(this.randomCellAwayFromEdge(1));
+      list.forEach((c) => this.addSquareBlast(out, c, 1));
+      centers.push(...list);
+    }
+    return { cells: out, centers };
+  }
+
+  // A small projectile sprite flies from `from` to `to`, trailing bursts of
+  // the item's theme color, so the player sees something physically arrive
+  // before it detonates — rather than the blast just appearing on tap.
+  private flyProjectile(
+    type: NukeType, from: { x: number; y: number }, to: { x: number; y: number },
+    delay = 0, duration = 420, sizeScale = 0.55, ease = 'Cubic.easeIn',
+  ): Promise<void> {
+    const glowColor = Phaser.Display.Color.HexStringToColor(NUKE_THEMES[type].glow).color;
+    return new Promise((resolve) => {
+      this.time.delayedCall(delay, () => {
+        const icon = this.add.image(from.x, from.y, nukeTextureKey(type)).setDepth(39);
+        icon.setDisplaySize(ART_SIZE * sizeScale, ART_SIZE * sizeScale);
+        const trail = this.time.addEvent({
+          delay: 35, loop: true, callback: () => this.spawnBurst(icon.x, icon.y, glowColor),
+        });
+        this.tweens.add({
+          targets: icon, x: to.x, y: to.y, angle: 320, duration, ease,
+          onComplete: () => { trail.remove(); icon.destroy(); resolve(); },
+        });
+      });
+    });
+  }
+
+  // A single jagged zigzag segment, redrawn fresh each flicker so repeated
+  // strikes don't look like the same static shape stamped twice.
+  private drawBoltSegment(
+    g: Phaser.GameObjects.Graphics, x0: number, y0: number, x1: number, y1: number,
+    color: number, widthPx: number, jitter: number,
+  ): void {
+    const segments = 8;
+    g.lineStyle(widthPx, color, 1);
+    g.beginPath();
+    g.moveTo(x0, y0);
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      g.lineTo(x0 + (x1 - x0) * t + (Math.random() - 0.5) * jitter, y0 + (y1 - y0) * t + (Math.random() - 0.5) * jitter);
+    }
+    g.lineTo(x1, y1);
+    g.strokePath();
+  }
+
+  // Real lightning actually falls — it strikes down from above the board
+  // to the point of contact first, THEN arcs out along the row/column and
+  // flickers with a trailing afterimage. The actual candy burst happens on
+  // the thunderclap right after (showNukeBanner's flash/shake), not on the
+  // bolt itself — this whole method is just the strike.
+  private async strikeLightning(target: Cell): Promise<void> {
+    const boardW = GRID_SIZE * TILE;
+    const boardH = GRID_SIZE * TILE;
+    const tx = this.cellX(target.col);
+    const ty = this.cellY(target.row);
+    const glow = Phaser.Display.Color.HexStringToColor(NUKE_THEMES.lightning.glow).color;
+
+    // Phase 1: fall — the bolt grows down from the sky to the contact point
+    // instead of just appearing, so it reads as striking down rather than
+    // flashing in place. Slowed to 2s (from a snappy 260ms) to match the
+    // other finisher items' appear-then-arrive timing — the bolt starts
+    // drawing the instant the target tile is tapped, so the player still
+    // sees it "appear immediately," it just takes 2s to reach the ground.
+    await new Promise<void>((resolve) => {
+      const haze = this.add.graphics().setDepth(38).setAlpha(0.6);
+      const core = this.add.graphics().setDepth(39);
+      const progress = { p: 0 };
+      this.tweens.add({
+        targets: progress, p: 1, duration: 2000, ease: 'Sine.easeIn',
+        onUpdate: () => {
+          const y1 = (ty + 40 * S) * progress.p;
+          haze.clear();
+          core.clear();
+          this.drawBoltSegment(haze, tx, -40 * S, tx, y1, glow, 14 * S, 16 * S);
+          this.drawBoltSegment(core, tx, -40 * S, tx, y1, 0xffffff, 5 * S, 16 * S);
+        },
+        onComplete: () => { haze.destroy(); core.destroy(); resolve(); },
+      });
+    });
+
+    // Phase 2: contact — the strike point flashes and the row arcs out
+    // from it immediately, then both lines flicker together with an
+    // afterimage.
+    this.cameras.main.shake(130, 0.014);
+    this.spawnShockwave(tx, ty, 0xffffff);
+    this.spawnBurst(tx, ty, glow);
+
+    const flicker = (alpha: number): Promise<void> => new Promise((resolve) => {
+      const haze = this.add.graphics().setDepth(38).setAlpha(0.55 * alpha);
+      this.drawBoltSegment(haze, tx, 0, tx, boardH, glow, 12 * S, 22 * S);
+      this.drawBoltSegment(haze, 0, ty, boardW, ty, glow, 12 * S, 22 * S);
+      const core = this.add.graphics().setDepth(39).setAlpha(alpha);
+      this.drawBoltSegment(core, tx, 0, tx, boardH, 0xffffff, 4 * S, 22 * S);
+      this.drawBoltSegment(core, 0, ty, boardW, ty, 0xffffff, 4 * S, 22 * S);
+      // The afterimage: the bolt doesn't vanish instantly, it fades out
+      // leaving a faint trailing streak for a beat before the next flicker.
+      this.tweens.add({
+        targets: [haze, core], alpha: 0, duration: 160, delay: 50,
+        onComplete: () => { haze.destroy(); core.destroy(); resolve(); },
+      });
+    });
+
+    await flicker(1);
+    await new Promise<void>((resolve) => this.time.delayedCall(70, resolve));
+    await flicker(0.75);
+    await new Promise<void>((resolve) => this.time.delayedCall(70, resolve));
+    await flicker(1);
+  }
+
+  // One meteor: a long tapered flame (three layered triangles — dim red
+  // outer, orange mid, bright core) stretching back from the meteor along
+  // its fall direction, present from the very first frame so it reads as
+  // trailing fire the whole way down rather than building up gradually.
+  // It lands with its own small shockwave and shake right at impact — each
+  // of the four hits its own beat — rather than everything only landing on
+  // the shared end-of-sequence flash.
+  private flyMeteorStreak(target: Cell, delay: number): Promise<void> {
+    const tx = this.cellX(target.col);
+    const ty = this.cellY(target.row);
+    const fromX = tx - 300 * S;
+    const fromY = ty - 300 * S;
+    const dx = tx - fromX;
+    const dy = ty - fromY;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const px = -uy;
+    const py = ux;
+    const tailLen = 150 * S;
+    const headW = ART_SIZE * 0.24;
+    const glow = Phaser.Display.Color.HexStringToColor(NUKE_THEMES.meteor.glow).color;
+
+    return new Promise((resolve) => {
+      this.time.delayedCall(delay, () => {
+        const icon = this.add.image(fromX, fromY, nukeTextureKey('meteor')).setDepth(39);
+        icon.setDisplaySize(ART_SIZE * 0.5, ART_SIZE * 0.5);
+        icon.setRotation(Math.atan2(dy, dx));
+
+        const flame = this.add.graphics().setDepth(38);
+        const drawTri = (len: number, widthFrac: number, color: number, alpha: number) => {
+          const tipX = icon.x - ux * len;
+          const tipY = icon.y - uy * len;
+          flame.fillStyle(color, alpha);
+          flame.beginPath();
+          flame.moveTo(icon.x + px * headW * widthFrac, icon.y + py * headW * widthFrac);
+          flame.lineTo(icon.x - px * headW * widthFrac, icon.y - py * headW * widthFrac);
+          flame.lineTo(tipX, tipY);
+          flame.closePath();
+          flame.fillPath();
+        };
+        const updateFlame = () => {
+          flame.clear();
+          drawTri(tailLen, 1, 0xff3b1f, 0.45);
+          drawTri(tailLen * 0.62, 0.7, 0xff8a3d, 0.6);
+          drawTri(tailLen * 0.3, 0.35, 0xfff2b0, 0.85);
+        };
+        updateFlame();
+        const trailTimer = this.time.addEvent({ delay: 16, loop: true, callback: updateFlame });
+
+        this.tweens.add({
+          targets: icon, x: tx, y: ty, duration: 2000, ease: 'Cubic.easeIn',
+          onComplete: () => {
+            trailTimer.remove();
+            flame.destroy();
+            icon.destroy();
+            this.spawnShockwave(tx, ty, glow);
+            this.spawnBurst(tx, ty, glow);
+            this.cameras.main.shake(140, 0.01);
+            resolve();
+          },
+        });
+      });
+    });
+  }
+
+  private async strikeMeteor(centers: Cell[]): Promise<void> {
+    await Promise.all(centers.map((c, i) => this.flyMeteorStreak(c, i * 140)));
+  }
+
+  // Black hole doesn't drop or strike anything — it opens on the targeted
+  // point as a spinning vortex, and every candy caught in the blast
+  // visibly spirals/flies into its center (shrinking and spinning as it
+  // goes) before the vortex snaps shut. The actual clear/score still runs
+  // through resolveCascade right after — this just sells the "sucked in"
+  // feeling first.
+  private async collapseIntoBlackHole(cells: Set<string>, center: { x: number; y: number }): Promise<void> {
+    const vortex = this.add.image(center.x, center.y, nukeTextureKey('blackHole')).setDepth(39).setScale(0).setAlpha(0.95);
+    const spin = this.tweens.add({ targets: vortex, angle: 360, duration: 900, repeat: -1, ease: 'Linear' });
+
+    // The vortex appears the instant the target tile is tapped, then spends
+    // ~2s visibly opening/charging before it starts pulling candies in —
+    // matching the other finisher items' appear-then-arrive timing instead
+    // of snapping open in 320ms.
+    await new Promise<void>((resolve) => {
+      this.tweens.add({
+        targets: vortex, scale: 1.3, duration: 1700, ease: 'Back.easeOut', onComplete: () => resolve(),
+      });
+    });
+
+    const pulls = Array.from(cells).map((key) => new Promise<void>((resolve) => {
+      const [r, c] = key.split(',').map(Number);
+      const sprite = this.board[r][c];
+      if (!sprite) { resolve(); return; }
+      const baseScale = sprite.scale;
+      this.tweens.add({
+        targets: sprite,
+        x: center.x, y: center.y, scale: baseScale * 0.08, angle: sprite.angle + 480 + Math.random() * 280,
+        duration: 420 + Math.random() * 260, ease: 'Cubic.easeIn',
+        onComplete: () => resolve(),
+      });
+    }));
+    await Promise.all(pulls);
+
+    this.cameras.main.shake(160, 0.012);
+    spin.remove();
+    await new Promise<void>((resolve) => {
+      this.tweens.add({
+        targets: vortex, scale: 0, alpha: 0, duration: 260, ease: 'Back.easeIn',
+        onComplete: () => { vortex.destroy(); resolve(); },
+      });
+    });
+  }
+
+  // Full sequence for one targeted finisher item: fly in (per-type), then
+  // the impact beat (flash/shake/zoom/banner), then the actual board clear.
+  private async detonateNuke(type: NukeType, target: Cell): Promise<void> {
+    const { cells, centers } = this.buildNukeCells(type, target);
+    if (cells.size === 0) return;
+    playSpecialActivate();
+
+    if (type === 'blackHole') {
+      const c = centers[0];
+      await this.collapseIntoBlackHole(cells, { x: this.cellX(c.col), y: this.cellY(c.row) });
+    } else if (type === 'lightning') {
+      await this.strikeLightning(centers[0]);
+    } else if (type === 'bomb') {
+      // A heavy object falling, not a quick toss — but it used to spawn
+      // 3 art-sizes above the board with an aggressive easeIn curve, so for
+      // roughly the first half of the 2s drop it was sitting almost
+      // motionless off-screen before becoming visible at all. Spawning it
+      // just above the board edge with a gentler ease means it's visible
+      // falling from the instant you tap, while still landing at the same
+      // ~2s mark as the other finisher items.
+      const c = centers[0];
+      await this.flyProjectile(
+        type, { x: this.cellX(c.col), y: -ART_SIZE * 0.6 }, { x: this.cellX(c.col), y: this.cellY(c.row) },
+        0, 2000, 1.1, 'Quad.easeIn',
+      );
+    } else {
+      await this.strikeMeteor(centers);
+    }
+
+    await this.showNukeBanner(type);
+    this.forceDestroyObstaclesIn(cells);
+    await this.resolveCascade(3, cells);
+    this.updateHud();
+  }
+
+  // Paid finisher items need to feel unmistakably bigger than a normal
+  // combo — a full-screen color flash + a camera zoom punch on top of the
+  // usual shake-and-text beat, loud enough that it reads as "worth buying"
+  // at a glance instead of blending into ordinary match feedback.
+  private flashScreen(colorNum: number, peakAlpha: number, duration: number): Promise<void> {
+    const flash = this.add.rectangle(
+      GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2, GRID_SIZE * TILE, GRID_SIZE * TILE, colorNum, 0,
+    ).setDepth(40);
+    return new Promise((resolve) => {
+      this.tweens.add({
+        targets: flash, alpha: peakAlpha, duration: duration * 0.3, ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: flash, alpha: 0, duration: duration * 0.7, ease: 'Sine.easeIn',
+            onComplete: () => { flash.destroy(); resolve(); },
+          });
+        },
+      });
+    });
+  }
+
+  private punchZoom(): void {
+    const cam = this.cameras.main;
+    const baseZoom = cam.zoom;
+    this.tweens.add({
+      targets: cam, zoom: baseZoom * 1.08, duration: 110, yoyo: true, ease: 'Sine.easeOut',
+    });
+  }
+
+  private showNukeBanner(type: NukeType): Promise<void> {
+    const cx = GRID_SIZE * TILE / 2;
+    const cy = GRID_SIZE * TILE / 2;
+    const theme = NUKE_THEMES[type];
+    const colorNum = Phaser.Display.Color.HexStringToColor(theme.glow).color;
+
+    this.cameras.main.shake(460, 0.024);
+    this.punchZoom();
+    const flashDone = this.flashScreen(colorNum, 0.6, 300);
+
+    const txt = this.add.text(cx, cy, t(NUKE_LABEL_KEYS[type]), {
+      fontFamily: TITLE_FONT,
+      fontSize: `${34 * S}px`,
+      color: theme.glow,
+      stroke: '#150f26',
+      strokeThickness: 7 * S,
+    }).setOrigin(0.5).setDepth(41).setScale(0.2).setAlpha(0);
+
+    const textDone = new Promise<void>((resolve) => {
+      this.tweens.add({
+        targets: txt, scale: 1.15, alpha: 1, duration: 150, ease: 'Back.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: txt, scale: 1, duration: 90, ease: 'Sine.easeOut',
+          });
+          this.tweens.add({
+            targets: txt, alpha: 0, duration: 260, delay: 340,
+            onComplete: () => { txt.destroy(); resolve(); },
+          });
+        },
+      });
+    });
+
+    return Promise.all([flashDone, textDone]).then(() => undefined);
   }
 
   // Applied straight to this run, not banked via Progress boosts — those only
@@ -271,6 +747,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startPlacementMode(): void {
+    this.placementMode = 'special';
     this.placementQueue = this.pendingSpecialQueue;
     this.pendingSpecialQueue = [];
     this.showPlacementCard();
@@ -291,7 +768,7 @@ export class GameScene extends Phaser.Scene {
     const icon = this.add.image(cx, cy - 24 * S, specialTextureKey(type)).setDepth(37).setScale(0);
     icon.setDisplaySize(96 * S, 96 * S);
     const label = this.add.text(cx, cy + 92 * S, t('placement.instruction'), {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${15 * S}px`,
       color: '#ffffff',
       stroke: '#150f26',
@@ -339,12 +816,183 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // Finisher items (bomb/lightning/meteor/blackHole) are a standing
+  // inventory, not something placed before the stage starts — the player
+  // taps the 🎒 items button in the HUD at any point mid-stage, which
+  // dispatches 'game:use-nuke' (see ui/itemBar.ts and the listener wired in
+  // create()). This reuses the same tap-to-target flow specials use
+  // (showNukeTargetCard / placementActive / onCandyPointerDown), just
+  // entered on demand instead of chained after the pre-stage placement.
+  private beginUseNukeItem(type: NukeType): void {
+    if (this.busy || this.placementActive || this.endText || this.movesRemaining <= 0) return;
+    if (!useNukeItem(type)) return;
+    refreshItemBar();
+    this.placementMode = 'nuke';
+    this.targetingNukeType = type;
+    this.showNukeTargetCard();
+  }
+
+  private showNukeTargetCard(): void {
+    this.placementActive = false;
+    const type = this.targetingNukeType;
+    if (!type) return;
+    playSpecialPromote();
+    const cx = GRID_SIZE * TILE / 2;
+    const cy = GRID_SIZE * TILE / 2;
+    const theme = NUKE_THEMES[type];
+    const themeColor = Phaser.Display.Color.HexStringToColor(theme.glow).color;
+
+    const dim = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.5).setDepth(35);
+    const cardBg = drawPanel(this, cx, cy - 10 * S, 168 * S, 168 * S, {
+      strokeColor: themeColor, strokeAlpha: 0.9, strokeWidth: 3 * S, radius: 20 * S, depth: 36,
+    }).setScale(0.4).setAlpha(0);
+    const icon = this.add.image(cx, cy - 24 * S, nukeTextureKey(type)).setDepth(37).setScale(0);
+    icon.setDisplaySize(96 * S, 96 * S);
+    const label = this.add.text(cx, cy + 92 * S, t('placement.nukeInstruction', { item: t(NUKE_LABEL_KEYS[type]) }), {
+      fontFamily: TITLE_FONT,
+      fontSize: `${15 * S}px`,
+      color: '#ffffff',
+      stroke: '#150f26',
+      strokeThickness: 4 * S,
+      align: 'center',
+      wordWrap: { width: 150 * S },
+    }).setOrigin(0.5).setDepth(37).setAlpha(0);
+
+    icon.setAngle(-25);
+    this.tweens.add({
+      targets: cardBg, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: icon, scale: 1, angle: 0, duration: 380, delay: 80, ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: label, alpha: 1, y: cy + 82 * S, duration: 280, delay: 200, ease: 'Sine.easeOut',
+    });
+
+    this.time.delayedCall(1300, () => {
+      this.tweens.add({
+        targets: [dim, cardBg, icon, label],
+        alpha: 0,
+        duration: 220,
+        onComplete: () => {
+          dim.destroy(); cardBg.destroy(); icon.destroy(); label.destroy();
+          this.placementActive = true;
+        },
+      });
+    });
+  }
+
+  private finishNukeTargetAt(row: number, col: number): void {
+    const type = this.targetingNukeType;
+    if (!type) return;
+    this.targetingNukeType = null;
+    this.placementActive = false;
+    this.busy = true;
+    this.detonateNuke(type, { row, col }).then(async () => {
+      // Using an item isn't a move, but clearing a big chunk of the board
+      // can still finish the stage or leave no legal swap — the same
+      // checks a normal match/special activation runs afterward.
+      if (this.movesRemaining > 0 && !this.hasAnyMove()) {
+        await this.reshuffleBoard();
+      }
+      await this.checkEndState();
+      this.busy = false;
+    });
+  }
+
+  // +3 moves is applied immediately, no targeting needed — mirrors
+  // grantEventItem's instant 'bonusMove' handling.
+  private beginUseBonusMoves(): void {
+    if (this.busy || this.placementActive || this.endText || this.movesRemaining <= 0) return;
+    if (!useBonusMovesItem()) return;
+    refreshItemBar();
+    this.movesRemaining += 3;
+    this.updateHud();
+  }
+
+  // Shop-bought specials (lineRow/lineCol/crossBomb/colorBomb) reuse the
+  // same tap-to-target flow as nuke items (see beginUseNukeItem above) —
+  // placementMode 'specialItem' keeps this on-demand path distinct from the
+  // pre-stage forced placement queue (placementMode 'special') that random
+  // in-stage events still use, since that one ends by showing the stage's
+  // "game start" banner, which would be wrong mid-stage here.
+  private beginUseSpecialItem(type: SpecialType): void {
+    if (this.busy || this.placementActive || this.endText || this.movesRemaining <= 0) return;
+    if (!useSpecialItem(type)) return;
+    refreshItemBar();
+    this.placementMode = 'specialItem';
+    this.targetingSpecialType = type;
+    this.showSpecialTargetCard();
+  }
+
+  private showSpecialTargetCard(): void {
+    this.placementActive = false;
+    const type = this.targetingSpecialType;
+    if (!type) return;
+    playSpecialPromote();
+    const cx = GRID_SIZE * TILE / 2;
+    const cy = GRID_SIZE * TILE / 2;
+    const theme = SPECIAL_THEMES[type];
+    const themeColor = Phaser.Display.Color.HexStringToColor(theme.glow).color;
+
+    const dim = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.5).setDepth(35);
+    const cardBg = drawPanel(this, cx, cy - 10 * S, 168 * S, 168 * S, {
+      strokeColor: themeColor, strokeAlpha: 0.9, strokeWidth: 3 * S, radius: 20 * S, depth: 36,
+    }).setScale(0.4).setAlpha(0);
+    const icon = this.add.image(cx, cy - 24 * S, specialTextureKey(type)).setDepth(37).setScale(0);
+    icon.setDisplaySize(96 * S, 96 * S);
+    const label = this.add.text(cx, cy + 92 * S, t('placement.instruction'), {
+      fontFamily: TITLE_FONT,
+      fontSize: `${15 * S}px`,
+      color: '#ffffff',
+      stroke: '#150f26',
+      strokeThickness: 4 * S,
+      align: 'center',
+      wordWrap: { width: 150 * S },
+    }).setOrigin(0.5).setDepth(37).setAlpha(0);
+
+    icon.setAngle(-25);
+    this.tweens.add({
+      targets: cardBg, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: icon, scale: 1, angle: 0, duration: 380, delay: 80, ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: label, alpha: 1, y: cy + 82 * S, duration: 280, delay: 200, ease: 'Sine.easeOut',
+    });
+
+    this.time.delayedCall(1300, () => {
+      this.tweens.add({
+        targets: [dim, cardBg, icon, label],
+        alpha: 0,
+        duration: 220,
+        onComplete: () => {
+          dim.destroy(); cardBg.destroy(); icon.destroy(); label.destroy();
+          this.placementActive = true;
+        },
+      });
+    });
+  }
+
+  private finishSpecialTargetAt(row: number, col: number): void {
+    const type = this.targetingSpecialType;
+    if (!type) return;
+    // Tile already holds a special — leave placementActive on (like
+    // finishPlacementAt) so the player can just tap a different tile
+    // instead of losing the already-consumed item to a bad target.
+    if (this.specialGrid[row][col]) return;
+    this.targetingSpecialType = null;
+    this.placementActive = false;
+    this.promoteToSpecial(row, col, type);
+  }
+
   private showGameStartBanner(): void {
     playGameStart();
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
     const txt = this.add.text(cx, cy, t('game.start'), {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${30 * S}px`,
       color: '#ffe9a8',
       stroke: '#150f26',
@@ -365,38 +1013,80 @@ export class GameScene extends Phaser.Scene {
   private showStoryIntro(speaker: string, text: string, onDismiss: () => void, subtitle?: string): void {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
+    const cardW = GRID_SIZE * TILE - 40 * S;
+    const wrapWidth = GRID_SIZE * TILE - 80 * S;
+    const maxCardH = GRID_SIZE * TILE - 40 * S;
+
+    window.dispatchEvent(new CustomEvent('game:story-open'));
 
     const overlay = this.add.rectangle(cx, cy, GRID_SIZE * TILE, GRID_SIZE * TILE, 0x0a0618, 0.82).setDepth(40);
-    const cardG = drawPanel(this, cx, cy, GRID_SIZE * TILE - 40 * S, 150 * S, {
-      fillColor: 0x2c1f4a, radius: 18 * S, strokeWidth: 2 * S, depth: 41,
-    });
-    const speakerText = this.add.text(cx, cy - 62 * S, speaker, {
-      fontFamily: 'Cinzel Decorative, serif',
+
+    const speakerText = this.add.text(0, 0, speaker, {
+      fontFamily: TITLE_FONT,
       fontSize: `${15 * S}px`,
       color: '#e8b64f',
       stroke: '#0a0618',
       strokeThickness: 4 * S,
-    }).setOrigin(0.5).setDepth(42);
-    const subtitleText = subtitle ? this.add.text(cx, cy - 42 * S, subtitle, {
-      fontFamily: 'Cormorant Garamond, serif',
+    }).setOrigin(0.5, 0).setDepth(42);
+    const subtitleText = subtitle ? this.add.text(0, 0, subtitle, {
+      fontFamily: BODY_FONT,
       fontSize: `${11 * S}px`,
       fontStyle: '700',
       color: '#a898c8',
       stroke: '#0a0618',
       strokeThickness: 2 * S,
-    }).setOrigin(0.5).setDepth(42) : undefined;
-    const bodyText = this.add.text(cx, cy - 5 * S, text, {
-      fontFamily: 'Cormorant Garamond, serif',
-      fontSize: `${16 * S}px`,
+    }).setOrigin(0.5, 0).setDepth(42) : undefined;
+
+    // Translated body text varies hugely in wrapped line count across 22
+    // languages, so the body font shrinks (down to a floor) before the card
+    // falls back to just growing — rather than a fixed card height that
+    // either clips long translations or looks mostly-empty for short ones.
+    let bodyFontPx = 16 * S;
+    const bodyFloorPx = 11 * S;
+    let bodyText: Phaser.GameObjects.Text;
+    const makeBodyText = (fontPx: number) => this.add.text(0, 0, text, {
+      fontFamily: BODY_FONT,
+      fontSize: `${fontPx}px`,
       fontStyle: '700',
       color: '#f3e6c8',
       align: 'center',
       stroke: '#0a0618',
       strokeThickness: 3 * S,
-      wordWrap: { width: GRID_SIZE * TILE - 80 * S },
-    }).setOrigin(0.5).setDepth(42);
-    const btn = createPillButton(this, cx, cy + 62 * S, t('story.startButton'), {
+      wordWrap: { width: wrapWidth },
+    }).setOrigin(0.5, 0).setDepth(42);
+
+    const gap = 10 * S;
+    const topPad = 20 * S;
+    const bottomPad = 20 * S;
+    const btnH = 14 * S + 6 * S * 2; // fontSize + paddingY*2, matches createPillButton sizing
+    const fixedH = topPad + speakerText.height + gap
+      + (subtitleText ? subtitleText.height + gap : 0)
+      + gap + btnH + bottomPad;
+
+    bodyText = makeBodyText(bodyFontPx);
+    while (fixedH + bodyText.height > maxCardH && bodyFontPx > bodyFloorPx) {
+      bodyText.destroy();
+      bodyFontPx = Math.max(bodyFloorPx, bodyFontPx - 1 * S);
+      bodyText = makeBodyText(bodyFontPx);
+    }
+
+    const cardH = Math.min(maxCardH, Math.max(150 * S, fixedH + bodyText.height));
+    const top = cy - cardH / 2;
+    let cursor = top + topPad;
+    speakerText.setPosition(cx, cursor);
+    cursor += speakerText.height + gap;
+    if (subtitleText) {
+      subtitleText.setPosition(cx, cursor);
+      cursor += subtitleText.height + gap;
+    }
+    bodyText.setPosition(cx, cursor);
+    cursor += bodyText.height + gap;
+    const btn = createPillButton(this, cx, cursor + btnH / 2, t('story.startButton'), {
       fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 14 * S, paddingY: 6 * S, depth: 42,
+    });
+
+    const cardG = drawPanel(this, cx, cy, cardW, cardH, {
+      fillColor: 0x2c1f4a, radius: 18 * S, strokeWidth: 2 * S, depth: 41,
     });
 
     const children: Phaser.GameObjects.GameObject[] = [overlay, cardG, speakerText, bodyText, btn];
@@ -404,6 +1094,7 @@ export class GameScene extends Phaser.Scene {
     const group = this.add.container(0, 0, children).setDepth(40);
     btn.on('pointerdown', () => {
       group.destroy(true);
+      window.dispatchEvent(new CustomEvent('game:story-close'));
       onDismiss();
     });
   }
@@ -561,7 +1252,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: `${16 * S}px`, color: style.color,
     }).setOrigin(0.5);
     const pips = this.add.text(0, 15 * S, '●'.repeat(hp), {
-      fontFamily: 'Cinzel Decorative, serif', fontSize: `${8 * S}px`, color: style.color,
+      fontFamily: TITLE_FONT, fontSize: `${8 * S}px`, color: style.color,
     }).setOrigin(0.5);
     return this.add.container(this.cellX(col), this.cellY(row), [g, icon, pips]).setDepth(8);
   }
@@ -643,7 +1334,13 @@ export class GameScene extends Phaser.Scene {
     const col = img.getData('col') as number;
 
     if (this.placementActive) {
-      this.finishPlacementAt(row, col);
+      if (this.placementMode === 'nuke') {
+        this.finishNukeTargetAt(row, col);
+      } else if (this.placementMode === 'specialItem') {
+        this.finishSpecialTargetAt(row, col);
+      } else {
+        this.finishPlacementAt(row, col);
+      }
       return;
     }
 
@@ -811,7 +1508,7 @@ export class GameScene extends Phaser.Scene {
     this.busy = true;
     try {
       const banner = this.add.text(GRID_SIZE * TILE / 2, GRID_SIZE * TILE / 2, t('reshuffle.banner'), {
-        fontFamily: 'Cinzel Decorative, serif',
+        fontFamily: TITLE_FONT,
         fontSize: `${18 * S}px`,
         color: '#ffffff',
         stroke: '#7a1fc9',
@@ -1198,7 +1895,7 @@ export class GameScene extends Phaser.Scene {
 
   private spawnScorePopup(x: number, y: number, amount: number): void {
     const txt = this.add.text(x, y, `+${amount}`, {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${16 * S}px`,
       color: '#ffe9a8',
       stroke: '#150f26',
@@ -1214,7 +1911,7 @@ export class GameScene extends Phaser.Scene {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
     const txt = this.add.text(cx, cy, t('game.combo', { n: multiplier }), {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${26 * S}px`,
       color: '#ffd166',
       stroke: '#150f26',
@@ -1334,9 +2031,9 @@ export class GameScene extends Phaser.Scene {
     if (this.score >= this.targetScore) {
       await this.detonateRemainingSpecials();
       completeStage(this.stage);
-      const baseReward = Math.min(30, 8 + Math.floor(this.stage / 20));
+      const baseReward = 8;
       const overAchieved = this.score >= this.targetScore * 2;
-      const reward = overAchieved ? Math.round(baseReward * 1.5) : baseReward;
+      const reward = overAchieved ? 12 : baseReward;
       addCurrency(reward);
       const hasNext = this.stage < TOTAL_STAGES;
       playStageClear();
@@ -1366,7 +2063,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.endText = this.add.text(cx, cy - panelH / 2 + 44 * S, t('outOfMoves.title'), {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${20 * S}px`,
       color: '#ff8080',
       stroke: '#150f26',
@@ -1378,7 +2075,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     const leaveBtn = createPillButton(this, cx, cy + panelH / 2 - 36 * S, t('outOfMoves.leave'), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, textColor: '#c9b8e0',
+      fontFamily: BODY_FONT, fontSize: `${14 * S}px`, textColor: '#c9b8e0',
       bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 7 * S, depth: 32,
     });
 
@@ -1408,11 +2105,18 @@ export class GameScene extends Phaser.Scene {
 
   private confirmExitToLobby(): void {
     if (this.busy) return;
+    if (this.movesUsed === 0) {
+      this.scene.start('LobbyScene');
+      return;
+    }
     this.showConfirmDialog(
       t('settings.exitConfirm'),
       t('common.leave'),
       t('common.cancel'),
-      () => this.scene.start('LobbyScene'),
+      () => {
+        spendHeart();
+        this.scene.start('LobbyScene');
+      },
     );
   }
 
@@ -1424,7 +2128,7 @@ export class GameScene extends Phaser.Scene {
       radius: 16 * S, strokeWidth: 2 * S, depth: 59,
     });
     const text = this.add.text(cx, cy - 30 * S, message, {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
+      fontFamily: BODY_FONT, fontSize: `${15 * S}px`, fontStyle: '700', color: '#f3e6c8', align: 'center',
       stroke: '#0a0618', strokeThickness: 3 * S,
       wordWrap: { width: GRID_SIZE * TILE - 120 * S },
     }).setOrigin(0.5).setDepth(59);
@@ -1433,7 +2137,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: `${14 * S}px`, bgColor: 0xe8b64f, paddingX: 16 * S, paddingY: 8 * S, depth: 59,
     });
     const noBtn = createPillButton(this, cx + 55 * S, cy + 40 * S, noLabel, {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${13 * S}px`, textColor: '#f3e6c8',
+      fontFamily: BODY_FONT, fontSize: `${13 * S}px`, textColor: '#f3e6c8',
       bgColor: 0x3a2a5c, paddingX: 16 * S, paddingY: 8 * S, depth: 59,
     });
 
@@ -1496,7 +2200,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.endText = this.add.text(cx, cy - panelH / 2 + 44 * S, msg, {
-      fontFamily: 'Cinzel Decorative, serif',
+      fontFamily: TITLE_FONT,
       fontSize: `${20 * S}px`,
       color,
       stroke: '#150f26',
@@ -1525,7 +2229,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     const lobbyBtn = createPillButton(this, cx, cy + panelH / 2 - 36 * S, t('endBanner.backToLobby'), {
-      fontFamily: 'Cormorant Garamond, serif', fontSize: `${14 * S}px`, textColor: '#c9b8e0',
+      fontFamily: BODY_FONT, fontSize: `${14 * S}px`, textColor: '#c9b8e0',
       bgColor: 0x3a2a5c, paddingX: 14 * S, paddingY: 6 * S, depth: 32,
     });
     lobbyBtn.on('pointerdown', () => this.scene.start('LobbyScene'));

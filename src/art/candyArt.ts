@@ -14,6 +14,9 @@ export const CANDY_PALETTES: CandyPalette[] = [
   { base: '#3fa9ff', light: '#c2e6ff', dark: '#0b5fb8' }, // blue — swirl lollipop
   { base: '#c15fff', light: '#ecccff', dark: '#7a1fc9' }, // purple — star
   { base: '#2ad6c9', light: '#c2fbf5', dark: '#0c8d82' }, // teal — heart
+  { base: '#ff6fae', light: '#ffd6ea', dark: '#c21f6b' }, // pink — clover
+  { base: '#6c7bff', light: '#d8dcff', dark: '#3a3fc9' }, // indigo — diamond
+  { base: '#ffffff', light: '#ffffff', dark: '#b8c2cc' }, // silver/white — donut
 ];
 
 function defs(id: string, p: CandyPalette): string {
@@ -187,7 +190,74 @@ function shapeHeart(id: string, p: CandyPalette): string {
   `;
 }
 
-const SHAPE_FNS = [shapeDisc, shapePotion, shapeTeardrop, shapeGem, shapeSwirl, shapeStar, shapeHeart];
+// 7: four-leaf clover
+function shapeClover(id: string, p: CandyPalette): string {
+  const c = ART_SIZE / 2;
+  const lobeR = ART_SIZE * 0.24;
+  const offset = lobeR * 0.92;
+  const centers = [
+    { x: c - offset, y: c - offset },
+    { x: c + offset, y: c - offset },
+    { x: c - offset, y: c + offset },
+    { x: c + offset, y: c + offset },
+  ];
+  const lobes = centers
+    .map((p0) => `<circle cx="${p0.x}" cy="${p0.y}" r="${lobeR}" />`)
+    .join('');
+  return `
+    <g filter="url(#shadow-${id})">
+      <g fill="url(#body-${id})" stroke="${p.dark}" stroke-width="2.5">
+        ${lobes}
+      </g>
+      <rect x="${c - ART_SIZE * 0.045}" y="${c}" width="${ART_SIZE * 0.09}" height="${ART_SIZE * 0.4}"
+            rx="${ART_SIZE * 0.045}" fill="${p.dark}" opacity="0.8" />
+      ${shine(c, lobeR * 1.6)}
+    </g>
+  `;
+}
+
+// 8: diamond (rotated square with facet lines)
+function shapeDiamond(id: string, p: CandyPalette): string {
+  const c = ART_SIZE / 2;
+  const r = ART_SIZE * 0.42;
+  const pts = `${c},${c - r} ${c + r},${c} ${c},${c + r} ${c - r},${c}`;
+  const facets = `
+    <line x1="${c}" y1="${c - r}" x2="${c}" y2="${c + r}" stroke="${p.light}" stroke-width="2" opacity="0.55" />
+    <line x1="${c - r}" y1="${c}" x2="${c + r}" y2="${c}" stroke="${p.dark}" stroke-width="1.5" opacity="0.4" />
+  `;
+  return `
+    <g filter="url(#shadow-${id})">
+      <polygon points="${pts}" fill="url(#body-${id})" stroke="${p.dark}" stroke-width="2.5" stroke-linejoin="round" />
+      ${facets}
+      ${shine(c, r)}
+    </g>
+  `;
+}
+
+// 9: iced donut (ring with glaze drip)
+function shapeDonut(id: string, p: CandyPalette): string {
+  const c = ART_SIZE / 2;
+  const rOuter = ART_SIZE * 0.4;
+  const rInner = rOuter * 0.42;
+  return `
+    <g filter="url(#shadow-${id})">
+      <circle cx="${c}" cy="${c}" r="${rOuter}" fill="url(#body-${id})" stroke="${p.dark}" stroke-width="2.5" />
+      <circle cx="${c}" cy="${c}" r="${rInner}" fill="#2b1030" opacity="0.18" />
+      <circle cx="${c}" cy="${c}" r="${rInner}" fill="none" stroke="${p.dark}" stroke-width="2" opacity="0.5" />
+      <path d="M ${c - rOuter * 0.8} ${c - rOuter * 0.25}
+               A ${rOuter * 0.85} ${rOuter * 0.85} 0 0 1 ${c + rOuter * 0.75} ${c - rOuter * 0.35}
+               L ${c + rOuter * 0.55} ${c - rOuter * 0.15}
+               A ${rOuter * 0.6} ${rOuter * 0.6} 0 0 0 ${c - rOuter * 0.6} ${c - rOuter * 0.05} Z"
+            fill="${p.light}" opacity="0.65" />
+      ${shine(c, rOuter)}
+    </g>
+  `;
+}
+
+const SHAPE_FNS = [
+  shapeDisc, shapePotion, shapeTeardrop, shapeGem, shapeSwirl, shapeStar, shapeHeart, shapeClover,
+  shapeDiamond, shapeDonut,
+];
 
 export function buildCandySvg(typeIndex: number): string {
   const p = CANDY_PALETTES[typeIndex];
