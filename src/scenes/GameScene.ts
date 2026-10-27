@@ -21,7 +21,7 @@ import { getStageIntro, getFloor, rollRandomEvent, EventItem } from '../data/sto
 import { t } from '../i18n';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
-import { playMockAd } from '../ui/AdOverlay';
+import { watchRewardedAd } from '../ui/AdOverlay';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import {
   playTap, playSwap, playInvalidSwap, playMatch, playSpecialPromote,
@@ -2166,7 +2166,7 @@ export class GameScene extends Phaser.Scene {
     adBtn.on('pointerdown', () => {
       group.destroy(true);
       this.endText = undefined;
-      this.confirmAd(t('outOfMoves.confirmAd'), () => this.playMockAdForMoves());
+      this.confirmAd(t('outOfMoves.confirmAd'), () => { void this.playAdForMoves(); });
     });
     leaveBtn.on('pointerdown', () => {
       spendHeart();
@@ -2221,14 +2221,19 @@ export class GameScene extends Phaser.Scene {
     noBtn.on('pointerdown', () => group.destroy(true));
   }
 
-  private playMockAdForMoves(): void {
+  private async playAdForMoves(): Promise<void> {
     const cx = GRID_SIZE * TILE / 2;
     const cy = GRID_SIZE * TILE / 2;
-    playMockAd(this, cx, cy, () => {
-      this.movesRemaining += 10;
-      this.updateHud();
-      this.armIdleTimer();
-    });
+    if (!await watchRewardedAd(this, cx, cy)) {
+      // No reward means the run is still out of moves, so put the choice back
+      // in front of the player rather than dropping them on a dead board with
+      // no way forward.
+      this.showOutOfMovesOptions();
+      return;
+    }
+    this.movesRemaining += 10;
+    this.updateHud();
+    this.armIdleTimer();
   }
 
   private async detonateRemainingSpecials(): Promise<void> {

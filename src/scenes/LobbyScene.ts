@@ -11,7 +11,7 @@ import { buildNukeSvg, nukeTextureKey, NukeType, NUKE_THEMES } from '../art/nuke
 import { svgToDataUri } from '../art/candyArt';
 import { createPillButton } from '../ui/PillButton';
 import { drawPanel } from '../ui/Panel';
-import { playMockAd } from '../ui/AdOverlay';
+import { watchRewardedAd } from '../ui/AdOverlay';
 import { setCurrentSceneKey } from '../ui/settingsPanel';
 import { playReward, playHeartGain } from '../audio/sfx';
 import { t } from '../i18n';
@@ -191,7 +191,7 @@ export class LobbyScene extends Phaser.Scene {
     });
     ascendBtn.on('pointerdown', () => {
       if (getHearts() <= 0) {
-        this.confirmAd(t('lobby.noHeartsConfirm'), () => this.playAdForHeart());
+        this.confirmAd(t('lobby.noHeartsConfirm'), () => { void this.playAdForHeart(); });
         return;
       }
       this.scene.start('GameScene', { stage: getCurrentStage() });
@@ -488,14 +488,13 @@ export class LobbyScene extends Phaser.Scene {
     noBtn.on('pointerdown', () => group.destroy(true));
   }
 
-  private playAdForHeart(): void {
+  private async playAdForHeart(): Promise<void> {
     const cx = W / 2;
     const cy = H / 2;
-    playMockAd(this, cx, cy, () => {
-      addHearts(1);
-      this.refreshHearts();
-      this.spawnRewardPopup(cx, cy, '+1 ❤️', playHeartGain);
-    });
+    if (!await watchRewardedAd(this, cx, cy)) return;
+    addHearts(1);
+    this.refreshHearts();
+    this.spawnRewardPopup(cx, cy, '+1 ❤️', playHeartGain);
   }
 
   private refreshBoostText(): void {
@@ -634,7 +633,7 @@ export class LobbyScene extends Phaser.Scene {
     });
 
     const rowAd = this.buildShopRow(cx, rowY, t('lobby.shopAdLabel'), t('lobby.get'), () => {
-      this.confirmAd(t('lobby.confirmWatchAdReward'), () => this.playAdForReward());
+      this.confirmAd(t('lobby.confirmWatchAdReward'), () => { void this.playAdForReward(); });
     });
     children.push(...rowAd);
     rowY += rowGap;
@@ -797,18 +796,17 @@ export class LobbyScene extends Phaser.Scene {
     });
   }
 
-  private playAdForReward(): void {
+  private async playAdForReward(): Promise<void> {
     if (this.shopGroup) {
       this.shopGroup.destroy(true);
       this.shopGroup = undefined;
     }
     const cx = W / 2;
     const cy = H / 2;
-    playMockAd(this, cx, cy, () => {
-      addCurrency(200);
-      this.refreshAll();
-      this.spawnRewardPopup(cx, cy, '+200 🌟');
-    });
+    if (!await watchRewardedAd(this, cx, cy)) return;
+    addCurrency(200);
+    this.refreshAll();
+    this.spawnRewardPopup(cx, cy, '+200 🌟');
   }
 
   private spawnRewardPopup(x: number, y: number, text: string, sound: () => void = playReward): void {

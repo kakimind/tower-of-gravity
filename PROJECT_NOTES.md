@@ -357,3 +357,58 @@ curl http://127.0.0.1:9333/json                          # webSocketDebuggerUrl
 | 1536×816 (데스크톱) | 424×424 | 1.000 | ✓ |
 
 수정 전 기본 뷰포트에서 391×645(1:1.65)였던 것이 전 구간에서 정확히 1.000이 됨.
+
+## 2026-10-26 (이어서) — AdMob 보상형 광고 실연동
+
+목업(`playMockAd`, 3초 카운트다운)을 실제 `@capacitor-community/admob` 8.2.1
+보상형 광고로 교체. 호출 지점은 3곳뿐이었음: 로비 하트 충전, 로비 별가루 보상,
+게임 중 이동 수 +10.
+
+### 구조
+- `src/ads/adConfig.ts` — 광고 ID와 테스트/실제 전환. **기본값은 debug든 release든
+  항상 Google 테스트 광고.** Play Console 내부/비공개 테스트용 AAB도 `--release`라
+  "릴리스 빌드니까 실제 광고"는 안전한 신호가 아님 — 테스터가 실제 광고를 누르면
+  그게 바로 AdMob 계정 정지 사유인 invalid traffic임. 실제 광고는 빌드할 때
+  명시적으로 요구해야 나감: `VITE_REAL_ADS=1 npm run build`.
+  `REAL_REWARDED_AD_ID`가 비어 있으면 플래그를 켜도 테스트 광고로 폴백 —
+  오타 난 플래그 하나로 존재하지 않는 광고 단위를 요청하는 앱이 나가지 않게.
+- `src/ads/adService.ts` — 초기화와 `showRewardedAd()`. 결과를
+  `'rewarded' | 'grace' | 'failed' | 'offline' | 'dismissed'`로 돌려주고,
+  `shouldGrantReward()`를 통과한 경우에만 호출부가 보상을 지급함.
+- `src/ui/AdOverlay.ts` — `watchRewardedAd()` 하나로 흐름 통합(로딩 스피너 →
+  광고 → 실패 시 사유별 안내). 웹 빌드(GitHub Pages 데모)는 AdMob이 네이티브
+  SDK라 동작하지 않으므로 기존 목업을 폴백으로 유지.
+
+### 정책 결정 (중요)
+- **오프라인은 절대 보상 없음.** 오프라인에 보상을 주면 비행기 모드가 가장 싼
+  보상 파밍 경로가 됨. `navigator.onLine`이 false면 바로 거부.
+- **온라인인데 로드 실패는 세션당 1회만 봐줌**(`grace`). 플레이어 잘못이 아니니
+  한 번은 넘어가되, 계속 봐주면 채워지지 않는 광고 단위가 곧 무한 보상이 됨.
+- **중간에 닫으면 보상 없음.** 플러그인 문서가 `Dismissed`는 보상 여부와 무관하다고
+  명시하고 있어서, `Rewarded` 이벤트를 권위 있는 신호로 삼음.
+- 광고 실패로 이동 수를 못 받으면 `showOutOfMovesOptions()`를 다시 띄움 —
+  안 그러면 수가 0인 보드에 선택지 없이 갇힘.
+- SDK 초기화 실패는 try/catch로 삼키고 앱 시작을 막지 않음.
+
+### 기타
+- `AndroidManifest.xml`에 `com.google.android.gms.ads.APPLICATION_ID` 추가
+  (없으면 시작 시 크래시). 현재 값은 Google 샘플 앱 ID — 실제 ID로 바꿀 땐
+  `REAL_REWARDED_AD_ID`와 **동시에** 바꿀 것.
+- i18n 키 4개(`ad.loading`/`ad.unavailable`/`ad.offline`/`ad.dismissed`)를
+  22개 언어 전부에 추가. 이탈리아어 `l'annuncio`의 아포스트로피가 TS 문자열을
+  깨뜨렸음 — 타이포그래픽 아포스트로피(’)로 해결.
+- `docs/privacy.html` 2항을 "예정 안내"에서 실제 연동 내용으로 교체하고 3항
+  제3자 제공도 갱신. **코드와 방침이 어긋나지 않게 하는 게 이 프로젝트의 기존
+  원칙이니, 광고 쪽을 또 바꾸면 여기도 같이 고칠 것.**
+
+### 검증 (에뮬레이터, 테스트 광고)
+1. 광고 완주 → 하트 0→1 지급, `onRewardedVideoAdReward` 발생, 리스너 정상 해제
+2. 비행기 모드 → "AD REWARDS NEED AN INTERNET CONNECTION." 안내, 하트 0 유지
+3. 광고 시작 6초 후 뒤로가기로 조기 종료 → `Dismissed`만 발생하고 `Reward` 없음,
+   하트 0 유지 (보상 미지급)
+4. `bundleRelease`(R8 + shrinkResources) 성공 — [[feedback_metaspace_not_heap_for_r8_oom]]의
+   Dear Star와 달리 metaspace OOM 없음. Capacitor 기반이라 의존성이 가벼운 덕.
+
+**주의: 비행기 모드를 껐는데 에뮬레이터 네트워크가 안 돌아옴**(`Active default
+network: none`). `svc wifi enable`/`svc data enable` 모두 무효였고 `adb reboot`로만
+복구됨. 오프라인 테스트는 이 비용을 감안할 것.

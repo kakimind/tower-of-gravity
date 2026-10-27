@@ -3,6 +3,7 @@ import { BOARD_PIXELS } from './config/GameConfig';
 import { GameScene } from './scenes/GameScene';
 import { LobbyScene } from './scenes/LobbyScene';
 import { initSettingsPanel } from './ui/settingsPanel';
+import { initAds } from './ads/adService';
 import { initItemBar } from './ui/itemBar';
 import { unlockAudioOnFirstGesture } from './audio/sfx';
 
@@ -71,6 +72,10 @@ waitForGameFonts().then(() => {
   };
 
   const game = new Phaser.Game(config);
+  // Warm up the ad SDK in the background so the first "watch an ad" tap isn't
+  // paying for initialization on top of the ad fetch. initAds swallows its own
+  // failures — ad setup must never be able to keep the game from starting.
+  void initAds();
   initSettingsPanel();
   initItemBar();
 
