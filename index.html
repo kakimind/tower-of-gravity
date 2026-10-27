@@ -324,10 +324,15 @@
       aspect-ratio: 1 / 1;
     }
 
+    /* Deliberately does NOT force width/height. Phaser's Scale Manager runs in
+       FIT + CENTER_BOTH mode, so it already measures #app and writes the
+       correctly letterboxed size onto the canvas's inline style. Overriding
+       that with width/height: 100% !important stretched the square 896x896
+       backing store to whatever shape #app happened to be — on a 20:9 phone
+       that distorted the whole game by 1:1.65. Leaving the inline style alone
+       also keeps the canvas correct if #app is ever not square. */
     canvas {
       display: block;
-      width: 100% !important;
-      height: 100% !important;
     }
 
     /* On a phone, fill the screen edge-to-edge like a native app instead of
@@ -344,10 +349,16 @@
         margin: 0;
       }
 
+      /* Rows are all auto-sized and the whole group is centered, rather than
+         giving the board row 1fr. The board is square by design, so on a tall
+         phone a 1fr row is much taller than the board can ever be — stretching
+         it just parks a ~250px void above and below. Sizing to content and
+         centering keeps the screen reading as one deliberate group. */
       .tray {
         flex: 1 1 auto;
         display: grid;
-        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto auto auto;
+        align-content: center;
         row-gap: 8px;
         min-height: 0;
         background: none;
@@ -362,12 +373,18 @@
       .topbar { grid-row: 1; }
       .hud { grid-row: 2; margin-bottom: 0; height: 92px; max-height: 92px; overflow: hidden; }
       .hud .badge { height: 100%; max-height: 92px; }
+      /* height must stay auto so the base rule's aspect-ratio: 1/1 is the thing
+         that derives it. Specifying height: 100% here made aspect-ratio
+         inapplicable (a definite height wins over it), and max-width then
+         clamped only the width — leaving a 391x645 box for a square board. */
       #app {
         grid-row: 3;
-        width: auto;
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
+        /* Width-bound on any normal phone, but on a short screen the square
+           would otherwise push the footer off: the subtrahend is the chrome
+           around it (topbar + the fixed 92px HUD + footer + gaps + safe-area
+           padding), so the board shrinks instead of overflowing. */
+        width: min(100%, calc(100dvh - 240px));
+        height: auto;
         align-self: center;
         justify-self: center;
       }
