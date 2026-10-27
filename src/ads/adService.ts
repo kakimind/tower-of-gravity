@@ -62,7 +62,16 @@ export async function showRewardedAd(): Promise<AdOutcome> {
   try {
     rewardListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => { earned = true; });
 
-    await AdMob.prepareRewardVideoAd({ adId: rewardedAdId(), isTesting: isTestingAds() });
+    // Only the fetch is raced against the clock. Once the ad is actually on
+    // screen it owns the experience and takes as long as it takes; it's the
+    // wait *before* that which can hang indefinitely on a half-open
+    // connection, and the player is sitting behind a blocking overlay for all
+    // of it. Giving up turns into the ordinary load-failure path, which the
+    // player can read and dismiss.
+    await withTimeout(
+      AdMob.prepareRewardVideoAd({ adId: rewardedAdId(), isTesting: isTestingAds() }),
+      PREPARE_TIMEOUT_MS,
+    );
     const item = await AdMob.showRewardVideoAd();
 
     // The event is the primary signal; a resolved reward item with a positive
@@ -76,6 +85,23 @@ export async function showRewardedAd(): Promise<AdOutcome> {
   } finally {
     await rewardListener?.remove().catch(() => undefined);
   }
+}
+
+// Long enough that a slow-but-working connection still gets its ad, short
+// enough that a dead one doesn't read as a frozen game.
+const PREPARE_TIMEOUT_MS = 15000;
+
+// Note that losing the race doesn't cancel the underlying fetch — the plugin
+// has no cancel — it just stops us waiting on it. Nothing is shown if that
+// fetch lands later, because showRewardVideoAd is never reached.
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`ad request timed out after ${ms}ms`)), ms);
+    work.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (err) => { clearTimeout(timer); reject(err); },
+    );
+  });
 }
 
 function failWithGrace(): AdOutcome {

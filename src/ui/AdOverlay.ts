@@ -4,6 +4,8 @@ import { drawPanel } from './Panel';
 import { t } from '../i18n';
 import { UI_SCALE, TITLE_FONT } from '../config/GameConfig';
 import { showRewardedAd, shouldGrantReward } from '../ads/adService';
+import { CANDY_PALETTES } from '../art/candyArt';
+import { Direction, nextDirection } from '../engine/Gravity';
 
 const S = UI_SCALE;
 
@@ -54,37 +56,94 @@ export function playMockAd(scene: Phaser.Scene, cx: number, cy: number, onComple
   });
 }
 
-// Fetching a rewarded ad takes a noticeable moment on a real connection, and
-// an unexplained freeze on the button reads as a broken game. The dots animate
-// so the wait is visibly alive rather than a stalled screen.
-function showAdSpinner(scene: Phaser.Scene, cx: number, cy: number): () => void {
+// Fetching a rewarded ad takes a few seconds on a real connection, and an
+// unexplained freeze on the button reads as a broken game. Rather than a stock
+// buffering spinner — which would be the one surface in this game that looks
+// like it came from somewhere else — the wait shows the game's own hook in
+// miniature: three runes pinned to whichever wall gravity is pointing at,
+// tumbling to the next wall each beat, using the same easing the real board
+// falls with. It keeps turning for as long as the wait lasts and never
+// resolves into a finished-looking state, so it can't imply the ad is ready
+// before it is.
+function showAdSummoning(scene: Phaser.Scene, cx: number, cy: number): () => void {
   const overlay = blockingOverlay(scene, cx, cy);
-  const panel = drawPanel(scene, cx, cy, 170 * S, 96 * S, {
+  const panel = drawPanel(scene, cx, cy, 190 * S, 172 * S, {
     fillColor: 0x241a3f, strokeColor: 0xe8b64f, strokeAlpha: 0.9, radius: 16 * S, strokeWidth: 2 * S, depth: 61,
   });
-  const label = scene.add.text(cx, cy - 10 * S, t('ad.loading'), {
-    fontFamily: TITLE_FONT, fontSize: `${15 * S}px`, color: '#f3e6c8',
-  }).setOrigin(0.5).setDepth(62);
-  const dots = scene.add.text(cx, cy + 20 * S, '', {
-    fontFamily: TITLE_FONT, fontSize: `${20 * S}px`, color: '#e8b64f',
+
+  const cell = 30 * S;
+  const field = cell * 3;
+  const fieldCx = cx;
+  const fieldCy = cy - 22 * S;
+  const originX = fieldCx - field / 2 + cell / 2;
+  const originY = fieldCy - field / 2 + cell / 2;
+
+  // The well the runes fall into — the same rounded frame the board sits in,
+  // so the miniature reads as a board rather than as decoration.
+  const frame = scene.add.graphics().setDepth(61);
+  frame.lineStyle(1.5 * S, 0xe8b64f, 0.35);
+  frame.strokeRoundedRect(fieldCx - field / 2 - 4 * S, fieldCy - field / 2 - 4 * S, field + 8 * S, field + 8 * S, 10 * S);
+
+  // Drawn from the candy palette rather than loaded as textures: the candy
+  // SVGs are only loaded by GameScene, so on a cold start in the lobby they
+  // don't exist yet and sprites would come up blank.
+  const runeTypes = [0, 4, 3];
+  const runes = runeTypes.map((type) => {
+    const palette = CANDY_PALETTES[type];
+    const size = cell * 0.68;
+    const g = scene.add.graphics().setDepth(62);
+    g.fillStyle(Phaser.Display.Color.HexStringToColor(palette.base).color, 1);
+    g.fillRoundedRect(-size / 2, -size / 2, size, size, 7 * S);
+    g.fillStyle(Phaser.Display.Color.HexStringToColor(palette.light).color, 0.55);
+    g.fillRoundedRect(-size / 2 + 3 * S, -size / 2 + 3 * S, size * 0.42, size * 0.3, 4 * S);
+    g.lineStyle(1.5 * S, Phaser.Display.Color.HexStringToColor(palette.dark).color, 0.9);
+    g.strokeRoundedRect(-size / 2, -size / 2, size, size, 7 * S);
+    return g;
+  });
+
+  // Which three cells the runes occupy for a given gravity direction: they
+  // always line the wall that gravity points at.
+  const wallCells = (dir: Direction): Array<{ col: number; row: number }> => {
+    switch (dir) {
+      case 'down': return [{ col: 0, row: 2 }, { col: 1, row: 2 }, { col: 2, row: 2 }];
+      case 'left': return [{ col: 0, row: 0 }, { col: 0, row: 1 }, { col: 0, row: 2 }];
+      case 'up': return [{ col: 0, row: 0 }, { col: 1, row: 0 }, { col: 2, row: 0 }];
+      case 'right': return [{ col: 2, row: 0 }, { col: 2, row: 1 }, { col: 2, row: 2 }];
+    }
+  };
+
+  let dir: Direction = 'down';
+  const settle = (target: Direction, animate: boolean) => {
+    wallCells(target).forEach((c, i) => {
+      const x = originX + c.col * cell;
+      const y = originY + c.row * cell;
+      if (!animate) { runes[i].setPosition(x, y); return; }
+      scene.tweens.add({ targets: runes[i], x, y, duration: 300, ease: 'Cubic.easeIn', delay: i * 45 });
+    });
+  };
+  settle(dir, false);
+
+  const label = scene.add.text(cx, cy + 56 * S, t('ad.loading'), {
+    fontFamily: TITLE_FONT, fontSize: `${14 * S}px`, color: '#f3e6c8',
+    align: 'center', wordWrap: { width: 164 * S },
   }).setOrigin(0.5).setDepth(62);
 
-  let step = 0;
-  const tick = scene.time.addEvent({
-    delay: 320,
+  const flip = scene.time.addEvent({
+    delay: 850,
     loop: true,
     callback: () => {
-      step = (step + 1) % 4;
-      dots.setText('·'.repeat(step));
+      dir = nextDirection(dir);
+      settle(dir, true);
     },
   });
 
   return () => {
-    tick.remove(false);
+    flip.remove(false);
+    runes.forEach((r) => { scene.tweens.killTweensOf(r); r.destroy(); });
     overlay.destroy();
     panel.destroy();
+    frame.destroy();
     label.destroy();
-    dots.destroy();
   };
 }
 
@@ -120,9 +179,9 @@ export async function watchRewardedAd(scene: Phaser.Scene, cx: number, cy: numbe
     return new Promise((resolve) => playMockAd(scene, cx, cy, () => resolve(true)));
   }
 
-  const dismissSpinner = showAdSpinner(scene, cx, cy);
+  const dismissSummoning = showAdSummoning(scene, cx, cy);
   const outcome = await showRewardedAd();
-  dismissSpinner();
+  dismissSummoning();
 
   if (shouldGrantReward(outcome)) return true;
 
