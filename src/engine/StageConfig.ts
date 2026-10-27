@@ -3,7 +3,7 @@ import { CANDY_TYPE_COUNT } from '../config/GameConfig';
 
 export const TOTAL_STAGES = 1000;
 
-export type ObstacleKind = 'ice' | 'chain' | 'mold';
+export type ObstacleKind = 'ice' | 'chain' | 'mold' | 'anchor';
 
 export interface StageConfig {
   stage: number;
@@ -12,12 +12,13 @@ export interface StageConfig {
   gravityFlipInterval: number;
   // Difficulty variety beyond "bigger numbers": physical obstacles layered
   // in from floor 4 onward as an independent axis of challenge, split
-  // across three kinds (see GameScene's setupObstacles) so difficulty can
+  // across four kinds (see GameScene's setupObstacles) so difficulty can
   // be distributed across several easier-to-tune knobs instead of one.
   colorCount: number;
   iceCount: number;
   chainCount: number;
   moldCount: number;
+  anchorCount: number;
   obstacleHp: number;
 }
 
@@ -67,24 +68,39 @@ export function getStageConfig(stage: number): StageConfig {
     : Math.min(14, 4 + Math.round((floor - 10) * (10 / 84)));
   const obstacleHp = floor < 30 ? 1 : floor < 60 ? 2 : floor < 90 ? 3 : 4;
 
-  // Three kinds, introduced one at a time as the board's capacity for
+  // Four kinds, introduced one at a time as the board's capacity for
   // obstacles grows, so each kind gets its own "this is new" moment instead
-  // of all scaling together from floor 5:
+  // of all scaling together from floor 5. Each one owns a different axis of
+  // difficulty rather than being a recolored version of the same wall:
   //  - ice: thaws when a match clears one of its orthogonal neighbors —
   //    the baseline obstacle, present from floor 5 (stage 41-50).
   //  - chain: can never be swapped and never thaws from a neighbor match —
   //    only clears if a cascade happens to match its own candy directly,
   //    which the player can't engineer on purpose. Introduced floor 20.
+  //  - anchor: thaws like ice, but while it stands the candy on its cell is
+  //    immovable under gravity, splitting that row/column into segments that
+  //    fall and refill separately — the one obstacle that attacks this game's
+  //    own gravity-flip hook. Introduced floor 35.
   //  - mold: thaws like ice, but spreads to an adjacent open cell every
   //    few moves if left alone — a creeping threat that punishes ignoring
   //    it. Introduced floor 50, and kept rare even late-game.
+  //
+  // The kinds carve up `totalObstacles` rather than adding on top of it, so
+  // introducing a new kind never raises how much of the board is locked (and
+  // never increases the odds of a no-moves-left board); it only makes the
+  // same budget nastier. Each slice is taken off the remaining budget in
+  // introduction order, rarest first, with ice absorbing whatever is left.
   const moldCount = floor < 50 ? 0 : Math.min(3, 1 + Math.floor((floor - 50) / 15));
-  const afterMold = totalObstacles - moldCount;
-  const chainCount = floor < 20 ? 0 : Math.min(afterMold, Math.ceil(afterMold * 0.4));
-  const iceCount = afterMold - chainCount;
+  const afterMold = Math.max(0, totalObstacles - moldCount);
+  const anchorCount = floor < 35 ? 0
+    : Math.min(afterMold, Math.min(3, 1 + Math.floor((floor - 35) / 20)));
+  const afterAnchor = afterMold - anchorCount;
+  const chainCount = floor < 20 ? 0 : Math.min(afterAnchor, Math.ceil(afterAnchor * 0.4));
+  const iceCount = afterAnchor - chainCount;
 
   return {
-    stage: s, targetScore, movesLimit, gravityFlipInterval, colorCount, iceCount, chainCount, moldCount, obstacleHp,
+    stage: s, targetScore, movesLimit, gravityFlipInterval, colorCount,
+    iceCount, chainCount, moldCount, anchorCount, obstacleHp,
   };
 }
 

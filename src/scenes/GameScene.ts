@@ -65,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   private iceCount = 0;
   private chainCount = 0;
   private moldCount = 0;
+  private anchorCount = 0;
   private obstacleHp = 1;
   private obstacleType: (ObstacleKind | null)[][] = [];
   private obstacleGridHp: number[][] = [];
@@ -118,6 +119,7 @@ export class GameScene extends Phaser.Scene {
     this.iceCount = cfg.iceCount;
     this.chainCount = cfg.chainCount;
     this.moldCount = cfg.moldCount;
+    this.anchorCount = cfg.anchorCount;
     this.obstacleHp = cfg.obstacleHp;
     this.movesUsed = 0;
     this.score = 0;
@@ -1172,11 +1174,11 @@ export class GameScene extends Phaser.Scene {
     return img;
   }
 
-  // Three physical obstacles, each a passive overlay on top of a slot,
+  // Four physical obstacles, each a passive overlay on top of a slot,
   // independent of whichever candy currently sits there (none of them block
   // matching that cell directly — only player-initiated swaps). Keeping them
-  // tied to the fixed slot rather than to a falling sprite means gravity/
-  // refill code needs no changes at all to carry obstacle state around.
+  // tied to the fixed slot rather than to a falling sprite means obstacle
+  // state never has to be carried around by a falling sprite.
   //  - ice: thaws (loses 1 HP) when a match clears one of its 4 orthogonal
   //    neighbors — the baseline, directly targetable obstacle.
   //  - chain: never thaws from a neighbor match. Only clears if a cascade
@@ -1185,6 +1187,9 @@ export class GameScene extends Phaser.Scene {
   //    making chain meaningfully harsher than ice despite sharing its HP pool.
   //  - mold: thaws like ice, but spreads to one adjacent open cell every few
   //    moves if left alone, so ignoring it compounds the problem.
+  //  - anchor: thaws like ice, but is the one obstacle gravity has to know
+  //    about — its candy never falls, which splits the line into independent
+  //    segments (see gravitySegments / applyGravityAndRefill).
   private readonly MOLD_SPREAD_CHANCE = 0.35;
   private readonly MOLD_SPREAD_EVERY_MOVES = 3;
   private readonly OBSTACLE_CAP = Math.floor(GRID_SIZE * GRID_SIZE * 0.4);
@@ -1195,7 +1200,7 @@ export class GameScene extends Phaser.Scene {
     this.obstacleOverlays = Array.from({ length: GRID_SIZE }, () => new Array<Phaser.GameObjects.Container | null>(GRID_SIZE).fill(null));
     this.obstacleTotal = 0;
 
-    const total = this.iceCount + this.chainCount + this.moldCount;
+    const total = this.iceCount + this.chainCount + this.moldCount + this.anchorCount;
     if (total <= 0) return;
 
     const cells: Cell[] = [];
@@ -1211,6 +1216,7 @@ export class GameScene extends Phaser.Scene {
       ...Array<ObstacleKind>(this.iceCount).fill('ice'),
       ...Array<ObstacleKind>(this.chainCount).fill('chain'),
       ...Array<ObstacleKind>(this.moldCount).fill('mold'),
+      ...Array<ObstacleKind>(this.anchorCount).fill('anchor'),
     ];
     plan.forEach((kind, i) => {
       const { row, col } = cells[i];
@@ -1234,10 +1240,19 @@ export class GameScene extends Phaser.Scene {
     this.spawnBurst(this.cellX(col), this.cellY(row), burstColor);
   }
 
-  private static readonly OBSTACLE_STYLE: Record<ObstacleKind, { fill: number; stroke: string; icon: string; color: string }> = {
+  // iconScale exists because the emoji icons carry their own generous glyph
+  // width (29-44px at tile size) while a plain arrow glyph only advances
+  // ~15px — rendered at the same font size the anchor's mark reads as a
+  // faint scratch next to the others, so it gets sized up to match.
+  private static readonly OBSTACLE_STYLE: Record<ObstacleKind, { fill: number; stroke: string; icon: string; color: string; iconScale?: number }> = {
     ice: { fill: 0xbfe8ff, stroke: '#e8f7ff', icon: '❄', color: '#e8f7ff' },
     chain: { fill: 0x8a7a63, stroke: '#d8c9a8', icon: '⛓', color: '#d8c9a8' },
     mold: { fill: 0x3a8f4a, stroke: '#9df0ac', icon: '🍄', color: '#c8f7d0' },
+    // A plain text glyph rather than an emoji: at tile size Chrome renders
+    // emoji in their own fixed colors, and a pale ⚖/⚓ washes out into
+    // something that reads as another candy. '↧' takes the amber tint and
+    // says what the tile does — this one falls no further.
+    anchor: { fill: 0xd98b2b, stroke: '#ffd79a', icon: '↧', color: '#ffe6bf', iconScale: 1.7 },
   };
 
   private createObstacleOverlay(row: number, col: number, kind: ObstacleKind, hp: number): Phaser.GameObjects.Container {
@@ -1249,7 +1264,7 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(2.5 * S, Phaser.Display.Color.HexStringToColor(style.stroke).color, 0.85);
     g.strokeRoundedRect(-size / 2, -size / 2, size, size, 12 * S);
     const icon = this.add.text(0, -4 * S, style.icon, {
-      fontSize: `${16 * S}px`, color: style.color,
+      fontSize: `${16 * S * (style.iconScale ?? 1)}px`, color: style.color,
     }).setOrigin(0.5);
     const pips = this.add.text(0, 15 * S, '●'.repeat(hp), {
       fontFamily: TITLE_FONT, fontSize: `${8 * S}px`, color: style.color,
@@ -1258,8 +1273,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   // Called with every cell a match just cleared (including ones consumed by
-  // a special-item detonation). Ice/mold thaw when one of their orthogonal
-  // neighbors is in this list; chain only thaws if it's in the list itself.
+  // a special-item detonation). Ice/mold/anchor thaw when one of their
+  // orthogonal neighbors is in this list; chain only thaws if it's in the
+  // list itself.
   // Each obstacle thaws at most once per cascade step even if multiple
   // cleared cells touch it, so a big combo doesn't insta-clear one.
   private damageObstacles(cells: Cell[]): void {
@@ -1291,7 +1307,7 @@ export class GameScene extends Phaser.Scene {
       neighbors.forEach(({ row: nr, col: nc }) => {
         if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) return;
         const kind = this.obstacleType[nr][nc];
-        if (kind === 'ice' || kind === 'mold') damageAt(nr, nc);
+        if (kind === 'ice' || kind === 'mold' || kind === 'anchor') damageAt(nr, nc);
       });
     });
   }
@@ -1938,58 +1954,117 @@ export class GameScene extends Phaser.Scene {
     return range(0, GRID_SIZE).map((col) => ({ row: lineIndex, col }));
   }
 
+  // An anchored cell's candy never moves, so it acts as a wall that cuts its
+  // row/column into runs of cells that fall independently of each other.
+  // Returns those runs in line order (anchored cells excluded — they're
+  // refilled in place by applyGravityAndRefill instead).
+  private gravitySegments(cells: Cell[]): Cell[][] {
+    const segments: Cell[][] = [];
+    let current: Cell[] = [];
+    for (const cell of cells) {
+      if (this.obstacleType[cell.row][cell.col] === 'anchor') {
+        if (current.length) segments.push(current);
+        current = [];
+      } else {
+        current.push(cell);
+      }
+    }
+    if (current.length) segments.push(current);
+    return segments;
+  }
+
   private async applyGravityAndRefill(): Promise<void> {
     const toHigh = this.direction === 'down' || this.direction === 'right';
     const tweens: Promise<void>[] = [];
 
     for (let lineIndex = 0; lineIndex < GRID_SIZE; lineIndex++) {
       const cells = this.lineCells(lineIndex);
-      const survivors: { sprite: Phaser.GameObjects.Image; type: number; special: SpecialType | null }[] = [];
-      for (const cell of cells) {
-        const sprite = this.board[cell.row][cell.col];
-        if (sprite) {
-          survivors.push({ sprite, type: this.typeGrid[cell.row][cell.col], special: this.specialGrid[cell.row][cell.col] });
+      // New candies enter from whichever end of the line gravity falls away
+      // from; only the segment touching that end can be fed from off-board.
+      const entryCell = toHigh ? cells[0] : cells[cells.length - 1];
+
+      for (const segment of this.gravitySegments(cells)) {
+        const fedFromEdge = segment[0] === entryCell || segment[segment.length - 1] === entryCell;
+        const survivors: { sprite: Phaser.GameObjects.Image; type: number; special: SpecialType | null }[] = [];
+        for (const cell of segment) {
+          const sprite = this.board[cell.row][cell.col];
+          if (sprite) {
+            survivors.push({ sprite, type: this.typeGrid[cell.row][cell.col], special: this.specialGrid[cell.row][cell.col] });
+          }
         }
+        const emptyCount = segment.length - survivors.length;
+        const survivorTargets = toHigh ? range(emptyCount, segment.length) : range(0, survivors.length);
+        const spawnTargets = toHigh ? range(0, emptyCount) : range(survivors.length, segment.length);
+
+        survivors.forEach((sv, idx) => {
+          const targetCell = segment[survivorTargets[idx]];
+          sv.sprite.setData('row', targetCell.row).setData('col', targetCell.col);
+          this.board[targetCell.row][targetCell.col] = sv.sprite;
+          this.typeGrid[targetCell.row][targetCell.col] = sv.type;
+          this.specialGrid[targetCell.row][targetCell.col] = sv.special;
+          tweens.push(tweenPromise(this, {
+            targets: sv.sprite,
+            x: this.cellX(targetCell.col),
+            y: this.cellY(targetCell.row),
+            duration: 220,
+            ease: 'Cubic.easeIn',
+          }));
+        });
+
+        spawnTargets.forEach((targetIdx) => {
+          const targetCell = segment[targetIdx];
+          const type = randomType(this.colorCount);
+          const sprite = this.spawnCandySprite(targetCell.row, targetCell.col, type);
+          this.board[targetCell.row][targetCell.col] = sprite;
+          this.typeGrid[targetCell.row][targetCell.col] = type;
+          this.specialGrid[targetCell.row][targetCell.col] = null;
+          if (fedFromEdge) {
+            const { x: entryX, y: entryY } = this.entryPosition(targetCell, emptyCount);
+            sprite.setPosition(entryX, entryY);
+            tweens.push(tweenPromise(this, {
+              targets: sprite,
+              x: this.cellX(targetCell.col),
+              y: this.cellY(targetCell.row),
+              duration: 260,
+              ease: 'Cubic.easeIn',
+            }));
+          } else {
+            // Walled off from the board edge by an anchor: a candy flying in
+            // from off-board would have to pass straight through the anchor,
+            // so it materializes on its own cell instead.
+            tweens.push(this.materializeCandy(sprite));
+          }
+        });
       }
-      const emptyCount = GRID_SIZE - survivors.length;
-      const survivorTargets = toHigh ? range(emptyCount, GRID_SIZE) : range(0, survivors.length);
-      const spawnTargets = toHigh ? range(0, emptyCount) : range(survivors.length, GRID_SIZE);
 
-      survivors.forEach((sv, idx) => {
-        const targetCell = cells[survivorTargets[idx]];
-        sv.sprite.setData('row', targetCell.row).setData('col', targetCell.col);
-        this.board[targetCell.row][targetCell.col] = sv.sprite;
-        this.typeGrid[targetCell.row][targetCell.col] = sv.type;
-        this.specialGrid[targetCell.row][targetCell.col] = sv.special;
-        tweens.push(tweenPromise(this, {
-          targets: sv.sprite,
-          x: this.cellX(targetCell.col),
-          y: this.cellY(targetCell.row),
-          duration: 220,
-          ease: 'Cubic.easeIn',
-        }));
-      });
-
-      spawnTargets.forEach((targetIdx) => {
-        const targetCell = cells[targetIdx];
+      // Anchored cells sit out gravity entirely, but their candy can still be
+      // cleared by a match — refill it in place so the slot never stays empty.
+      for (const cell of cells) {
+        if (this.obstacleType[cell.row][cell.col] !== 'anchor') continue;
+        if (this.board[cell.row][cell.col]) continue;
         const type = randomType(this.colorCount);
-        const { x: entryX, y: entryY } = this.entryPosition(targetCell, emptyCount);
-        const sprite = this.spawnCandySprite(targetCell.row, targetCell.col, type);
-        sprite.setPosition(entryX, entryY);
-        this.board[targetCell.row][targetCell.col] = sprite;
-        this.typeGrid[targetCell.row][targetCell.col] = type;
-        this.specialGrid[targetCell.row][targetCell.col] = null;
-        tweens.push(tweenPromise(this, {
-          targets: sprite,
-          x: this.cellX(targetCell.col),
-          y: this.cellY(targetCell.row),
-          duration: 260,
-          ease: 'Cubic.easeIn',
-        }));
-      });
+        const sprite = this.spawnCandySprite(cell.row, cell.col, type);
+        this.board[cell.row][cell.col] = sprite;
+        this.typeGrid[cell.row][cell.col] = type;
+        this.specialGrid[cell.row][cell.col] = null;
+        tweens.push(this.materializeCandy(sprite));
+      }
     }
 
     await Promise.all(tweens);
+  }
+
+  private materializeCandy(sprite: Phaser.GameObjects.Image): Promise<void> {
+    const { displayWidth, displayHeight } = sprite;
+    sprite.setAlpha(0).setDisplaySize(displayWidth * 0.4, displayHeight * 0.4);
+    return tweenPromise(this, {
+      targets: sprite,
+      alpha: 1,
+      displayWidth,
+      displayHeight,
+      duration: 240,
+      ease: 'Back.easeOut',
+    });
   }
 
   private entryPosition(cell: Cell, emptyCount: number): { x: number; y: number } {
