@@ -278,3 +278,54 @@ src/i18n/                        번역 시스템 (한국어/영어만 완비, 2
   로그 파일이나 `Get-NetTCPConnection`(PowerShell)으로 할 것.
 - **`npx vite`가 IPv6(`::1`)에만 바인딩되면 Chrome이 못 붙는다.** 에러 페이지만
   뜨고 원인이 안 보임. `--host 127.0.0.1`을 명시해서 띄울 것.
+
+## 2026-10-26 (이어서) — anchor 에뮬레이터 검증 + 발견한 종횡비 버그
+
+### 검증 방법: 소스 수정 없이 원하는 스테이지로 점프
+예전처럼 `init()`에 `this.stage = N`을 박을 필요가 없었음. 릴리스/프로덕션
+번들에는 `window.__game` 훅이 없지만(`import.meta.env.DEV` 가드), **debug APK는
+Capacitor가 WebView 디버깅을 켜주므로 CDP로 `localStorage`를 직접 심으면 됨.**
+
+```
+gradlew assembleDebug → adb install -r → adb shell am start
+adb shell cat /proc/net/unix | grep webview_devtools     # 소켓 이름
+adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>
+curl http://127.0.0.1:9333/json                          # webSocketDebuggerUrl
+→ WS로 Runtime.evaluate: localStorage.setItem('towerGravityProgress', ...) 후 reload
+```
+`towerGravityProgress`에 `{unlocked, current}`만 원하는 스테이지로 넣고 새로고침하면
+로비가 바로 그 층에서 열림. node 24는 `WebSocket`이 전역이라 별도 패키지 불필요.
+
+### anchor 실기기 확인 결과 (stage 350 = floor 35, anchor 데뷔 층)
+앵커 2개가 (0,1)·(1,1)에 세로로 붙어 나와서 오히려 좋은 테스트가 됨. 그 아래
+열에서 3매치를 터뜨린 뒤:
+- 앵커 2칸의 재료는 **그대로 남음** (예전 동작이었다면 열 전체가 붕괴하며 떨어졌음)
+- 빈 3칸은 위에서 떨어지지 않고 **제자리에서 생성됨** (가장자리와 단절된 구간)
+- 매치에 인접했던 아래쪽 앵커는 HP 핍이 ●●→●로 감소, 위쪽 앵커는 그대로
+  (인접한 게 cleared 칸이 아니라 다른 앵커이므로) — 녹는 규칙도 정상
+- logcat FATAL/Uncaught 0건
+
+### ⚠️ 발견: 폰 화면에서 캔버스가 세로로 늘어남 (이번 변경과 무관, 초기 커밋부터)
+에뮬레이터(1080×2400)에서 보드 타일이 눈에 띄게 세로로 길쭉함. 측정 결과:
+
+| | 값 |
+|---|---|
+| 캔버스 백킹스토어 | 896 × 896 (정사각, 정상) |
+| Phaser가 넣은 인라인 스타일 | 391.4px × 391.4px (정사각, 정상) |
+| **실제 CSS 박스** | **391.4 × 644.9 (1 : 1.65로 늘어남)** |
+
+원인은 `index.html`의 모바일 미디어쿼리(`max-width: 640px`) 안 `#app` 규칙:
+```css
+#app { grid-row: 3; width: auto; height: 100%; max-width: 100%; max-height: 100%; }
+```
+`height: 100%`가 명시돼 있으면 `aspect-ratio: 1/1`은 크기 결정에서 무시되고,
+너비만 `max-width: 100%`로 잘려서 박스가 정사각이 아니게 됨. 거기에
+`canvas { width:100% !important; height:100% !important }`가 Phaser의 올바른
+인라인 사이즈를 덮어써서 백킹스토어가 그대로 늘어나 그려짐.
+
+- **초기 커밋(`2bcf1ac`)부터 있던 규칙** — 이번 anchor 작업과 무관하고,
+  이미 비공개 테스트로 올라간 AAB에도 들어 있음.
+- 고치는 방향: `height: 100%` 대신 `height: auto; width: 100%`로 두고
+  `aspect-ratio`가 높이를 유도하게 하는 것(세로 여백은 `align-self: center`로 처리).
+  다만 가로가 더 긴 화면에서는 반대로 높이가 잘릴 수 있으니 두 방향 다 확인할 것.
+- **아직 안 고침** — 사용자 판단 대기 중.
