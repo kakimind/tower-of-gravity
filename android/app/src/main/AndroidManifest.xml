@@ -34,13 +34,14 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
         <!-- AdMob refuses to initialize without this, and crashes the app at
-             startup if it's missing. The value here is Google's published
-             sample app id, matching the test ad units in src/ads/adConfig.ts;
-             swap it for the real one from the AdMob console at the same time
-             as REAL_REWARDED_AD_ID, not before. -->
+             startup if it's missing. This is the real app id and it has to stay
+             in step with REAL_REWARDED_AD_ID in src/ads/adConfig.ts — the two
+             belong to the same AdMob app, so they are only ever changed
+             together. Which inventory actually serves is decided separately by
+             the VITE_REAL_ADS build flag, not by this value. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-7834868288333512~5748549417" />
 
     </application>
 

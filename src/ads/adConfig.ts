@@ -18,7 +18,11 @@ const TEST_REWARDED_AD_ID = 'ca-app-pub-3940256099942544/5224354917';
 // Leaving these empty is safe: useRealAds() refuses to switch over without
 // them, so a mistyped build flag falls back to test ads rather than silently
 // shipping an app that requests ads from an ad unit that doesn't exist.
-const REAL_REWARDED_AD_ID = '';
+// Annotated as string rather than left to inference: TypeScript would narrow
+// a non-empty literal to its own type and then reject the emptiness guard in
+// useRealAds() as impossible — the guard has to keep compiling so that
+// blanking this id stays a safe way to fall back to test ads.
+const REAL_REWARDED_AD_ID: string = 'ca-app-pub-7834868288333512/3123008195';
 
 export function useRealAds(): boolean {
   return import.meta.env.VITE_REAL_ADS === '1' && REAL_REWARDED_AD_ID !== '';
