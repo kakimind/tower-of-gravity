@@ -1,0 +1,37 @@
+[Play Console 언어]
+Türkçe (tr-TR)
+
+[앱 이름]
+Yerçekimi Kulesi
+
+[간단한 설명]
+Yerçekimini ters çevir, kuleye tırman! 1000 bölümlük eşleştirme bulmacası.
+
+[자세한 설명]
+Bir sürprizi olan eşleştirme bulmacası: yerçekiminin kendisi size karşı dönüyor. Yerçekimi Kulesi'ne hoş geldiniz.
+
+Malzemeleri kaydırıp üç ya da daha fazlasını eşleştirin; ama birkaç hamlede bir yerçekimi tersine döner ve tüm tahta karşı yöne çöker. Tam her şey oturdu derken, her şey yeniden kayar.
+
+◆ ÖNE ÇIKANLAR
+
+🔄 Yerçekimi dönüşü
+Birkaç hamlede bir yerçekimi tersine döner ve malzemeler öbür tarafa düşer. Hiçbir tahta uzun süre yerinde kalmaz.
+
+💎 4 özel malzeme
+Satır temizle, sütun temizle, çarpı bomba ve renk bombası. Mağazadan yıldız tozuyla alın ya da tırmanış sırasında etkinliklerden kazanın.
+
+🌟 Yıldız tozu
+Bölümü geçtiğinizde yıldız tozu kazanırsınız. Zorlu kısımları aşmak için fazladan hamleye ya da özel malzemelere harcayın.
+
+❤️ Can sistemi
+Her deneme bir kalp harcar. Kalpler zamanla dolar, aceleniz varsa doldurmanın bir yolu hep vardır.
+
+◆ YOL ARKADAŞLARINIZ
+
+Yukarı çıkarken beş kişi size eşlik eder: Eski Arşivci, Aldatıcı Işık, Kule Muhafızı, Toz Perisi ve bir Çırak Büyücü — her biri kendi katında, kendi sesiyle ve kendi hikâyesiyle.
+
+◆ 1000 BÖLÜM, 100 KAT
+
+Alt katlar alışmanız için zaman tanır. Üst katlar sıkıştırır: yerçekimi daha sık döner, malzemeler çeşitlenir ve her tahtayı okumak zorlaşır.
+
+Tırmanmaya başlayın. Ne kadar yükselebildiğinizi görün.

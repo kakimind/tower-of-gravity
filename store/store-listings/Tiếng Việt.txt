@@ -1,0 +1,37 @@
+[Play Console 언어]
+Tiếng Việt (vi)
+
+[앱 이름]
+Tháp Trọng Lực
+
+[간단한 설명]
+Lật ngược trọng lực, chinh phục tòa tháp! Match-3 với 1000 màn chơi.
+
+[자세한 설명]
+Một trò match-3 có điểm xoay: chính trọng lực quay lưng lại với bạn. Chào mừng đến với Tháp Trọng Lực.
+
+Vuốt các nguyên liệu để ghép ba hoặc nhiều hơn — nhưng cứ vài nước đi, trọng lực lại đảo chiều và cả bàn chơi đổ sập về hướng ngược lại. Đúng lúc bàn chơi tưởng như đã yên, mọi thứ lại xê dịch.
+
+◆ ĐIỂM NỔI BẬT
+
+🔄 Đảo chiều trọng lực
+Cứ vài nước đi, trọng lực đảo chiều và nguyên liệu rơi sang phía bên kia. Không bàn chơi nào đứng yên được lâu.
+
+💎 4 nguyên liệu đặc biệt
+Xóa hàng, xóa cột, bom chữ thập và bom màu. Mua trong cửa hàng bằng bụi sao, hoặc nhận được từ các sự kiện trên đường leo tháp.
+
+🌟 Bụi sao
+Hoàn thành màn chơi để nhận bụi sao. Dùng nó đổi thêm lượt đi hoặc nguyên liệu đặc biệt khi chặng đường khó dần.
+
+❤️ Hệ thống tim
+Mỗi lượt chơi tốn một tim. Tim hồi lại theo thời gian, và nếu vội thì luôn có cách nạp thêm.
+
+◆ NHỮNG NGƯỜI DẪN ĐƯỜNG
+
+Năm người bạn đồng hành chờ bạn trên đường lên: Thủ thư già, Đốm lửa tinh quái, Người gác cổng tháp, Tiên bụi và một Pháp sư tập sự — mỗi người một giọng kể và một câu chuyện riêng ở tầng của mình.
+
+◆ 1000 MÀN CHƠI, 100 TẦNG THÁP
+
+Tầng thấp cho bạn thời gian làm quen. Tầng cao siết chặt hơn: trọng lực đảo chiều dày hơn, nguyên liệu đa dạng hơn, và bàn chơi ngày càng khó đọc.
+
+Bắt đầu leo thôi. Xem bạn lên được đến đâu.

@@ -1,0 +1,37 @@
+[Play Console 언어]
+Polski (pl-PL)
+
+[앱 이름]
+Wieża Grawitacji
+
+[간단한 설명]
+Odwróć grawitację i wespnij się na wieżę! Match-3 na 1000 poziomów.
+
+[자세한 설명]
+Match-3 z niespodzianką: to sama grawitacja obraca się przeciwko tobie. Witaj w Wieży Grawitacji.
+
+Przesuwaj składniki, by łączyć trzy lub więcej — ale co kilka ruchów grawitacja się odwraca i cała plansza osypuje się w przeciwną stronę. Dokładnie wtedy, gdy plansza wydaje się spokojna, wszystko rusza od nowa.
+
+◆ NAJWAŻNIEJSZE
+
+🔄 Odwrócenie grawitacji
+Co kilka ruchów grawitacja się odwraca, a składniki spadają w drugą stronę. Żadna plansza nie leży spokojnie zbyt długo.
+
+💎 4 specjalne składniki
+Usuń wiersz, usuń kolumnę, bomba krzyżowa i bomba kolorowa. Kup je w sklepie za gwiezdny pył albo zdobądź w wydarzeniach podczas wspinaczki.
+
+🌟 Gwiezdny pył
+Ukończ poziom, by zdobyć gwiezdny pył. Wydaj go na dodatkowe ruchy lub specjalne składniki, gdy robi się stromo.
+
+❤️ System serc
+Każde podejście kosztuje jedno serce. Serca odnawiają się z czasem, a gdy się spieszysz, zawsze da się je uzupełnić.
+
+◆ TWOI PRZEWODNICY
+
+W drodze na górę towarzyszy ci pięcioro: Stary Archiwista, Błędny Ognik, Strażnik Wieży, Duszek Kurzu i Uczeń Maga — każde z własnym głosem i własną opowieścią na swoim piętrze.
+
+◆ 1000 POZIOMÓW, 100 PIĘTER
+
+Niskie piętra dają czas na naukę. Wyższe przykręcają śrubę: grawitacja odwraca się częściej, składników przybywa, a każdą planszę trudniej odczytać.
+
+Zacznij się wspinać i sprawdź, jak wysoko dotrzesz.

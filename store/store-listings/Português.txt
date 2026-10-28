@@ -1,0 +1,37 @@
+[Play Console 언어]
+Português (pt-PT)
+
+[앱 이름]
+Torre da Gravidade
+
+[간단한 설명]
+Inverte a gravidade e sobe a torre! Puzzle match-3 com 1000 níveis.
+
+[자세한 설명]
+Um puzzle match-3 com uma reviravolta: a própria gravidade vira-se contra ti. Bem-vindo à Torre da Gravidade.
+
+Desliza os ingredientes para juntar três ou mais — mas, a cada poucas jogadas, a gravidade inverte-se e o tabuleiro inteiro desaba na direção oposta. Mesmo quando parece estável, tudo volta a mexer-se.
+
+◆ CARACTERÍSTICAS
+
+🔄 Inversão da gravidade
+A cada poucas jogadas a gravidade inverte-se e os ingredientes caem para o outro lado. Nenhum tabuleiro fica quieto durante muito tempo.
+
+💎 4 ingredientes especiais
+Eliminar linha, eliminar coluna, bomba em cruz e bomba de cor. Compra-os na loja com poeira estelar ou encontra-os em eventos durante a subida.
+
+🌟 Poeira estelar
+Conclui um nível para ganhar poeira estelar. Gasta-a em jogadas extra ou em ingredientes especiais para vencer os troços mais difíceis.
+
+❤️ Sistema de vidas
+Cada partida custa um coração. Os corações recuperam com o tempo e há sempre forma de os repor se tiveres pressa.
+
+◆ OS TEUS GUIAS
+
+Cinco companheiros acompanham-te na subida: o Velho Arquivista, o Fogo-Fátuo, o Guardião da Torre, o Duende do Pó e uma Aprendiz de Maga, cada um com a sua voz e a sua história nos respetivos pisos.
+
+◆ 1000 NÍVEIS, 100 PISOS
+
+Os pisos baixos deixam-te aprender com calma. Os mais altos apertam: a gravidade inverte-se mais vezes, surgem mais ingredientes e cada tabuleiro fica mais difícil de ler.
+
+Começa a subir e vê até onde consegues chegar.

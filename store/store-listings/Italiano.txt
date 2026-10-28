@@ -1,0 +1,37 @@
+[Play Console 언어]
+Italiano (it-IT)
+
+[앱 이름]
+Torre della Gravità
+
+[간단한 설명]
+Ribalta la gravità e scala la torre! Puzzle match-3 da 1000 livelli.
+
+[자세한 설명]
+Un puzzle match-3 con una svolta: è la gravità stessa a ribellarsi. Benvenuto nella Torre della Gravità.
+
+Fai scorrere gli ingredienti per allinearne tre o più, ma ogni pochi mosse la gravità si inverte e l'intero tabellone crolla nella direzione opposta. Proprio quando sembra tutto stabile, si rimette tutto in movimento.
+
+◆ CARATTERISTICHE
+
+🔄 Inversione di gravità
+Ogni poche mosse la gravità si inverte e gli ingredienti cadono dall'altra parte. Nessun tabellone resta fermo a lungo.
+
+💎 4 ingredienti speciali
+Elimina riga, elimina colonna, bomba a croce e bomba colorata. Acquistali al negozio con la polvere di stelle o trovali negli eventi durante la salita.
+
+🌟 Polvere di stelle
+Completa un livello per guadagnare polvere di stelle. Spendila in mosse extra o ingredienti speciali per superare i tratti più ostici.
+
+❤️ Sistema di vite
+Ogni partita costa un cuore. I cuori si rigenerano col tempo e, se hai fretta, c'è sempre un modo per ricaricarli.
+
+◆ LE TUE GUIDE
+
+Cinque compagni ti accompagnano nella salita: il Vecchio Archivista, il Fuoco fatuo, il Guardiano della Torre, la Fata della polvere e un'Apprendista maga, ognuno con la propria voce e la propria storia al proprio piano.
+
+◆ 1000 LIVELLI, 100 PIANI
+
+I piani bassi ti lasciano prendere confidenza. Quelli alti alzano la pressione: la gravità si inverte più spesso, gli ingredienti aumentano e ogni tabellone diventa più difficile da leggere.
+
+Inizia la scalata. Scopri fino a dove riesci ad arrivare.

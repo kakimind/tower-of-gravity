@@ -1,0 +1,37 @@
+[Play Console 언어]
+Bahasa Indonesia (id)
+
+[앱 이름]
+Menara Gravitasi
+
+[간단한 설명]
+Balikkan gravitasi, daki menaranya! Puzzle match-3 dengan 1000 level.
+
+[자세한 설명]
+Puzzle match-3 dengan satu kejutan: gravitasi sendiri berbalik melawanmu. Selamat datang di Menara Gravitasi.
+
+Geser bahan untuk menyamakan tiga atau lebih — tetapi setiap beberapa langkah, gravitasi berbalik dan seluruh papan runtuh ke arah sebaliknya. Tepat saat papan terasa tenang, semuanya bergeser lagi.
+
+◆ FITUR UTAMA
+
+🔄 Pembalikan gravitasi
+Setiap beberapa langkah gravitasi berbalik dan bahan jatuh ke sisi lain. Tidak ada papan yang diam lama.
+
+💎 4 bahan spesial
+Hapus baris, hapus kolom, bom silang, dan bom warna. Beli di toko dengan debu bintang, atau dapatkan lewat peristiwa saat mendaki.
+
+🌟 Debu bintang
+Selesaikan level untuk mendapatkan debu bintang. Gunakan untuk langkah tambahan atau bahan spesial saat jalurnya mengetat.
+
+❤️ Sistem nyawa
+Setiap percobaan memakai satu hati. Hati pulih seiring waktu, dan selalu ada cara mengisinya kalau sedang buru-buru.
+
+◆ PARA PEMANDU
+
+Lima pendamping menemanimu naik: Arsiparis Tua, Api Kecil Penggoda, Penjaga Gerbang Menara, Peri Debu, dan seorang Penyihir Magang — masing-masing dengan suara dan kisahnya sendiri di lantainya.
+
+◆ 1000 LEVEL, 100 LANTAI
+
+Lantai bawah memberimu waktu belajar. Lantai atas menekan lebih keras: gravitasi lebih sering berbalik, bahan makin beragam, dan papan makin sulit dibaca.
+
+Mulai mendaki. Lihat seberapa tinggi kamu bisa sampai.

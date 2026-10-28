@@ -1,0 +1,37 @@
+[Play Console 언어]
+English (en-US)
+
+[앱 이름]
+Top Gravity
+
+[간단한 설명]
+Flip gravity, climb the tower! Match-3 puzzle across 1000 stages.
+
+[자세한 설명]
+A match-3 puzzle with a twist: gravity itself flips against you. Welcome to Tower of Gravity.
+
+Swipe ingredients to match 3 or more — but every few moves, gravity reverses and the entire board comes crashing down in the opposite direction. Just when the board feels stable, everything shifts again.
+
+◆ KEY FEATURES
+
+🔄 Gravity Flip
+Every few moves, gravity reverses and ingredients tumble the other way. No board ever stays settled for long.
+
+💎 4 Special Ingredients
+Row Clear, Column Clear, Cross Bomb, and Color Bomb. Buy them in the shop with Stardust, or find them through events as you climb.
+
+🌟 Stardust Economy
+Clear a stage to earn Stardust. Spend it on extra moves or special ingredients to help you through tougher climbs.
+
+❤️ Heart System
+Each run costs one heart. Hearts regenerate over time, and there's always a way to top up if you're in a hurry.
+
+◆ MEET YOUR GUIDES
+
+Five companions join you on the way up — the Old Archivist, the Will-o'-wisp, the Tower Gatekeeper, the Dust Sprite, and a fellow Apprentice Mage — each with their own voice and story as you pass through their floors.
+
+◆ 1000 STAGES, 100 FLOORS
+
+Low floors ease you in. High floors turn up the pressure — gravity flips more often, ingredients grow more varied, and every board gets harder to read.
+
+Start climbing. See how high you can go.

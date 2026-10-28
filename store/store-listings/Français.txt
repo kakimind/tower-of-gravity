@@ -1,0 +1,37 @@
+[Play Console 언어]
+Français (fr-FR)
+
+[앱 이름]
+Tour de la Gravité
+
+[간단한 설명]
+Inversez la gravité, gravissez la tour ! Match-3 de 1000 niveaux.
+
+[자세한 설명]
+Un match-3 avec une torsion : la gravité elle-même se retourne contre vous. Bienvenue dans la Tour de la Gravité.
+
+Faites glisser les ingrédients pour en aligner trois ou plus — mais toutes les quelques coups, la gravité s'inverse et le plateau entier s'effondre dans l'autre sens. Au moment précis où tout semble stable, tout se remet à bouger.
+
+◆ POINTS FORTS
+
+🔄 Inversion de gravité
+Toutes les quelques coups, la gravité s'inverse et les ingrédients tombent de l'autre côté. Aucun plateau ne reste tranquille bien longtemps.
+
+💎 4 ingrédients spéciaux
+Suppression de ligne, suppression de colonne, bombe en croix et bombe de couleur. Achetez-les à la boutique avec de la poussière d'étoile, ou obtenez-les lors d'événements pendant l'ascension.
+
+🌟 Poussière d'étoile
+Terminez un niveau pour gagner de la poussière d'étoile. Dépensez-la en coups supplémentaires ou en ingrédients spéciaux pour franchir les passages difficiles.
+
+❤️ Système de vies
+Chaque partie coûte un cœur. Les cœurs se régénèrent avec le temps, et il y a toujours moyen de faire le plein si vous êtes pressé.
+
+◆ VOS GUIDES
+
+Cinq compagnons vous accompagnent : le Vieil Archiviste, le Feu follet, le Gardien de la Tour, la Fée de poussière et une Apprentie mage, chacun avec sa voix et son histoire à son étage.
+
+◆ 1000 NIVEAUX, 100 ÉTAGES
+
+Les étages bas vous laissent prendre vos marques. Les étages hauts serrent la vis : la gravité s'inverse plus souvent, les ingrédients se diversifient et chaque plateau devient plus difficile à lire.
+
+Commencez l'ascension. Voyez jusqu'où vous pouvez monter.
