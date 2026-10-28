@@ -4,10 +4,65 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>중력의 탑</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+KR:wght@500;700;900&family=Noto+Serif+JP:wght@500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Noto+Serif+TC:wght@500;700;900&family=Noto+Naskh+Arabic:wght@500;700&family=Noto+Serif+Devanagari:wght@500;700;900&family=Noto+Serif+Thai:wght@500;700;900&family=Noto+Serif:wght@500;600;700;900&display=swap" rel="stylesheet" />
   <style>
+    /* Fonts are bundled with the app, not fetched from Google Fonts.
+       A webfont that arrives over the network is a race the player can lose:
+       on a cold start over a slow connection the title and HUD rendered in
+       the OS fallback serif, and Phaser rasterizes canvas text once at
+       creation, so a late-arriving face never retroactively repaints. Shipping
+       the files inside the APK removes the race and the offline case with it.
+
+       Each file is subsetted to the characters that language can actually
+       show (see tools/fonts/README.md) — the full
+       CJK families are ~20MB each, the subsets are a few hundred KB. Weights
+       come from the variable `wght` axis, hence the font-weight ranges.
+       Emoji are deliberately absent: those still come from the system font,
+       exactly as they did before. */
+    @font-face {
+      font-family: 'Cinzel Decorative'; font-style: normal; font-weight: 700;
+      src: url('./fonts/CinzelDecorative-Bold.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Cinzel Decorative'; font-style: normal; font-weight: 900;
+      src: url('./fonts/CinzelDecorative-Black.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond'; font-style: normal; font-weight: 300 700;
+      src: url('./fonts/CormorantGaramond-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif KR'; font-style: normal; font-weight: 200 900;
+      src: url('./fonts/NotoSerifKR-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif JP'; font-style: normal; font-weight: 200 900;
+      src: url('./fonts/NotoSerifJP-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif SC'; font-style: normal; font-weight: 200 900;
+      src: url('./fonts/NotoSerifSC-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif TC'; font-style: normal; font-weight: 200 900;
+      src: url('./fonts/NotoSerifTC-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Naskh Arabic'; font-style: normal; font-weight: 400 700;
+      src: url('./fonts/NotoNaskhArabic-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif Devanagari'; font-style: normal; font-weight: 100 900;
+      src: url('./fonts/NotoSerifDevanagari-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif Thai'; font-style: normal; font-weight: 100 900;
+      src: url('./fonts/NotoSerifThai-VF.woff2') format('woff2'); font-display: block;
+    }
+    @font-face {
+      font-family: 'Noto Serif'; font-style: normal; font-weight: 100 900;
+      src: url('./fonts/NotoSerif-VF.woff2') format('woff2'); font-display: block;
+    }
+
     :root {
       --night-950: #150f26;
       --night-900: #1e1638;

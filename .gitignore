@@ -23,3 +23,6 @@ android/**/*.keystore
 
 # Codex CLI output (scratch, not source)
 codex-*.md
+
+# Upstream font sources + intermediate charsets (regenerate: tools/fonts/README.md)
+tools/fonts/.cache/
