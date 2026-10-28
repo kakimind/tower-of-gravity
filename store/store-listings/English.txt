@@ -2,7 +2,7 @@
 English (en-US)
 
 [앱 이름]
-Top Gravity
+Tower of Gravity
 
 [간단한 설명]
 Flip gravity, climb the tower! Match-3 puzzle across 1000 stages.
