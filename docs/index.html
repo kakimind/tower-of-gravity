@@ -1,405 +1,297 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>중력의 탑 — Tower of Gravity</title>
-<meta name="description" content="중력이 뒤집히는 매치-3, 중력의 탑. 1000개의 스테이지, 100개의 층, 4종 특수 재료와 다섯 안내자가 함께합니다.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗼</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<title>중력의 탑 — Top of Gravity</title>
+<meta name="description" content="중력이 몇 수마다 뒤집히는 매치-3 퍼즐. 1000개 스테이지, 100개 층, 특수 재료 4종과 다섯 안내자. Google Play에서 무료로 즐기세요.">
+<meta property="og:title" content="중력의 탑 — Top of Gravity">
+<meta property="og:description" content="재료를 밀어 셋을 맞추세요. 단, 몇 수마다 중력이 뒤집혀 판 전체가 반대쪽으로 쏟아집니다. 1000 스테이지 매치-3 퍼즐.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://kakimind.github.io/tower-of-gravity/assets/feature.webp">
+<meta property="og:url" content="https://kakimind.github.io/tower-of-gravity/">
+<link rel="icon" href="icon.png">
+<link rel="canonical" href="https://kakimind.github.io/tower-of-gravity/">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Space+Mono:wght@400;700&display=swap');
+
   :root {
-    --night-950: #150f26;
-    --night-900: #1e1638;
-    --night-800: #2c1f4a;
-    --night-700: #382753;
-    --parchment: #f3e6c8;
-    --parchment-dim: #c9bce0;
-    --ink: #0a0618;
-    --gold: #e8b64f;
-    --gold-bright: #ffe9a8;
-    --gold-dark: #a9823a;
-    --violet: #9b6bff;
-    --violet-dim: #6b4fc2;
-    --rule: rgba(232, 182, 79, 0.22);
+    --paper: #fafaf6; --paper-raised: #ffffff; --ink: #101012;
+    --ink-soft: #55534c; --ink-faint: #94918a; --rule: #d8d5cb;
+    --spot: #9b6bff; --focus: #101012;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121210; --paper-raised: #1a1a17; --ink: #f2f0e8;
+      --ink-soft: #b5b1a5; --ink-faint: #706d63; --rule: #38362f; --focus: #f2f0e8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #121210; --paper-raised: #1a1a17; --ink: #f2f0e8;
+    --ink-soft: #b5b1a5; --ink-faint: #706d63; --rule: #38362f; --focus: #f2f0e8;
   }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  html, body { margin: 0; padding: 0; }
-
   body {
-    background:
-      radial-gradient(ellipse 640px 420px at 50% -8%, rgba(155,107,255,0.22) 0%, rgba(155,107,255,0) 70%),
-      radial-gradient(circle 2px at 12% 18%, #fff 0%, transparent 100%),
-      radial-gradient(circle 1.5px at 24% 42%, #fff 0%, transparent 100%),
-      radial-gradient(circle 2px at 82% 14%, #fff 0%, transparent 100%),
-      radial-gradient(circle 1.5px at 90% 38%, #fff 0%, transparent 100%),
-      radial-gradient(circle 1.5px at 68% 8%, #fff 0%, transparent 100%),
-      radial-gradient(circle 2px at 8% 70%, #fff 0%, transparent 100%),
-      radial-gradient(circle 1.5px at 94% 68%, #fff 0%, transparent 100%),
-      radial-gradient(circle 1.5px at 55% 85%, #fff 0%, transparent 100%),
-      linear-gradient(180deg, var(--night-950) 0%, var(--night-900) 55%, var(--night-800) 100%);
-    background-attachment: fixed;
-    color: var(--parchment);
-    font-family: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
-    font-size: 17px;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .masthead-font { font-family: "Big Shoulders Display", "Archivo Black", sans-serif; }
+  .mono { font-family: "Space Mono", ui-monospace, monospace; }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; }
+
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 50;
+    background: var(--ink); color: var(--paper); padding: 0.7rem 1.1rem;
+    font-family: "Space Mono"; font-size: 0.78rem;
+  }
+  .skip:focus { left: 0.8rem; top: 0.8rem; }
+
+  .page { max-width: 76rem; margin: 0 auto; padding: 0 1.8rem; }
+
+  .runhead {
+    position: fixed; top: 0; bottom: 0; left: 0.9rem; z-index: 20;
+    display: flex; align-items: center; pointer-events: none;
+  }
+  .runhead span {
+    display: inline-block; writing-mode: vertical-rl;
+    font-family: "Space Mono"; font-size: 0.72rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  @media (max-width: 980px) { .runhead { display: none; } }
+
+  .backbar {
+    position: fixed; top: 1.2rem; right: 1.6rem; z-index: 20;
+    font-family: "Space Mono"; font-size: 0.75rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-soft);
+    border-bottom: 1px solid var(--ink-faint); padding-bottom: 0.2rem;
+  }
+  .backbar:hover { color: var(--ink); border-color: var(--ink); }
+
+  .opener {
+    padding: 6rem 0 3rem; border-bottom: 3px solid var(--ink);
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 3rem; align-items: end;
+  }
+  .opener .kicker {
+    font-family: "Space Mono"; font-size: 0.78rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--spot); display: block; margin-bottom: 1.2rem;
+  }
+  .opener h1 {
+    font-family: "Big Shoulders Display"; font-weight: 900;
+    font-size: clamp(2.4rem, 6.4vw, 4.6rem); line-height: 0.95; margin: 0; text-transform: uppercase;
+  }
+  .opener .dek { font-style: italic; font-size: 1.2rem; color: var(--ink-soft); margin: 1.4rem 0 0; max-width: 32rem; }
+  .opener .byline { font-family: "Space Mono"; font-size: 0.78rem; color: var(--ink-faint); text-align: right; line-height: 1.9; }
+  @media (max-width: 760px) { .opener { grid-template-columns: 1fr; } .opener .byline { text-align: left; } }
+
+  .plate-row {
+    padding: 3rem 0; display: grid; grid-template-columns: 1fr 1.3fr;
+    gap: 3rem; align-items: center; border-bottom: 1px solid var(--rule);
+  }
+  .plate { position: relative; border: 1px solid var(--rule); background: var(--paper-raised); padding: 1.6rem; margin: 0; }
+  .plate .shot { width: 100%; height: auto; border-radius: 4px; display: block; }
+  .plate .cap { margin-top: 1rem; font-family: "Space Mono"; font-size: 0.72rem; color: var(--ink-faint); display: flex; justify-content: space-between; gap: 1rem; }
+  .lede p.body:first-of-type::first-letter {
+    font-family: "Big Shoulders Display"; font-weight: 900; font-size: 3.4rem;
+    line-height: 0.8; float: left; padding: 0.05em 0.12em 0 0; color: var(--spot);
+  }
+  .lede p.body { margin: 0 0 1.1rem; max-width: 34rem; }
+
+  .factbox { border-top: 2px solid var(--ink); padding-top: 1rem; margin-top: 1.4rem; max-width: 30rem; }
+  .factbox dl { display: flex; flex-wrap: wrap; gap: 0 1.8rem; margin: 0; }
+  .factbox dt { font-family: "Space Mono"; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin: 0; }
+  .factbox dd { font-family: "Space Mono"; font-size: 0.85rem; margin: 0.1rem 0 0.8rem; color: var(--ink); }
+
+  .playbadge {
+    display: inline-flex; align-items: center; gap: 0.6em; margin-top: 1.6rem; padding: 0.8rem 1.3rem;
+    background: var(--ink); color: var(--paper); font-family: "Space Mono"; font-size: 0.82rem;
+    letter-spacing: 0.04em; text-transform: uppercase; transition: background-color 0.2s ease;
+  }
+  .playbadge:hover { background: var(--spot); color: #fff; }
+  .badge-note { font-family: "Space Mono"; font-size: 0.72rem; color: var(--ink-faint); margin: 0.7rem 0 0; }
+
+  @media (max-width: 760px) { .plate-row { grid-template-columns: 1fr; } }
+
+  .pull-section { padding: 3.5rem 0; border-bottom: 1px solid var(--rule); }
+  .pull-section .label { font-family: "Space Mono"; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 1.8rem; }
+  .feature-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .feature-list li { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1.4rem; padding: 1.4rem 0; border-top: 1px solid var(--rule); }
+  .feature-list li:first-child { border-top: none; }
+  .feature-list .fnum { font-family: "Big Shoulders Display"; font-weight: 900; font-size: 1.8rem; color: var(--spot); opacity: 0.5; }
+  .feature-list h3 { font-family: "Big Shoulders Display"; font-weight: 700; text-transform: uppercase; font-size: 1.15rem; margin: 0 0 0.35rem; }
+  .feature-list p { margin: 0; color: var(--ink-soft); max-width: 36rem; }
+
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 2px solid var(--ink); margin: 0; }
+  .figures div { padding: 1.4rem 1.4rem 1.6rem; border-left: 1px solid var(--rule); }
+  .figures div:first-child { border-left: none; padding-left: 0; }
+  .figures dt { font-family: "Space Mono"; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 0.5rem; }
+  .figures dd { margin: 0; font-family: "Big Shoulders Display"; font-weight: 900; font-size: 2.6rem; line-height: 1; }
+  .figures dd span { font-family: "Space Mono"; font-weight: 400; font-size: 0.78rem; color: var(--ink-soft); display: block; margin-top: 0.5rem; letter-spacing: 0.02em; line-height: 1.5; }
+  @media (max-width: 760px) {
+    .figures { grid-template-columns: repeat(2, 1fr); }
+    .figures div:nth-child(odd) { border-left: none; padding-left: 0; }
   }
 
-  ::selection { background: var(--violet); color: var(--ink); }
+  .note-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 3rem; align-items: start; }
+  .note-row .standfirst { font-style: italic; font-size: 1.1rem; color: var(--ink-soft); margin: 0; max-width: 24rem; }
+  .note-row .body { margin: 0 0 1.1rem; max-width: 36rem; }
+  .note-row .body:last-of-type { margin-bottom: 0; color: var(--ink-soft); }
+  @media (max-width: 760px) { .note-row { grid-template-columns: 1fr; gap: 1.8rem; } }
 
-  a { color: var(--gold); text-decoration: none; }
-  a:hover { color: var(--gold-bright); }
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
+  .gallery figure { margin: 0; border: 1px solid var(--rule); background: var(--paper-raised); padding: 1rem; }
+  .gallery img { width: 100%; height: auto; display: block; border-radius: 3px; }
+  .gallery .cap {
+    margin-top: 0.8rem; font-family: "Space Mono"; font-size: 0.68rem; color: var(--ink-faint);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 0.8rem;
+  }
+  @media (max-width: 760px) { .gallery { grid-template-columns: repeat(2, 1fr); gap: 1rem; } }
 
-  h1, h2, h3, .display {
-    font-family: 'Cinzel Decorative', serif;
-    color: var(--gold);
-    text-wrap: balance;
-    font-weight: 700;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  .readlink {
+    display: inline-block; margin-top: 1.6rem; font-family: "Space Mono";
+    font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--spot); border-bottom: 1px solid currentColor; padding-bottom: 0.2rem;
   }
+  .readlink:hover { color: var(--ink); }
 
-  .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.6rem; }
-
-  /* ---------------- nav ---------------- */
-  nav {
-    position: sticky; top: 0; z-index: 40;
-    backdrop-filter: blur(10px);
-    background: rgba(21, 15, 38, 0.7);
-    border-bottom: 1px solid var(--rule);
-  }
-  .nav-row { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 0; }
-  .brand {
-    display: flex; align-items: center; gap: 0.55rem;
-    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 1.05rem;
-    color: var(--parchment); letter-spacing: 0.01em;
-  }
-  .nav-links { display: flex; gap: 1.8rem; font-size: 0.86rem; color: var(--parchment-dim); }
-  .nav-links a { color: var(--parchment-dim); }
-  .nav-links a:hover { color: var(--gold-bright); }
-  @media (max-width: 760px) { .nav-links { display: none; } }
-
-  /* ---------------- buttons ---------------- */
-  .btn {
-    display: inline-flex; align-items: center; gap: 0.5em;
-    padding: 0.8rem 1.7rem; border-radius: 999px;
-    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 0.88rem;
-    border: none; cursor: default;
-  }
-  .btn-primary {
-    background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 45%, var(--gold-dark) 100%);
-    color: var(--ink);
-    box-shadow: 0 10px 24px -8px rgba(232,182,79,0.45), inset 0 1px 0 rgba(255,255,255,0.4);
-  }
-  .btn-ghost {
-    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 0.95rem;
-    color: var(--parchment); border: 1.5px solid var(--rule);
-    background: rgba(232,182,79,0.06);
-  }
-  .btn-ghost:hover { background: rgba(232,182,79,0.12); color: var(--gold-bright); }
-
-  /* ---------------- hero ---------------- */
-  .hero { padding: 4.5rem 0 5.5rem; }
-  .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 3rem; align-items: center; }
-  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
-
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 0.6em;
-    font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 0.82rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet);
-    margin-bottom: 1.1rem;
-  }
-  .eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--violet); display: inline-block; }
-
-  h1.headline {
-    font-size: clamp(2.3rem, 4.6vw, 3.3rem);
-    line-height: 1.22; margin: 0 0 1.1rem;
-  }
-  h1.headline .accent { color: var(--gold-bright); }
-
-  .hero-sub {
-    font-size: 1.1rem; color: var(--parchment-dim); max-width: 36rem; margin: 0 0 2rem;
-  }
-
-  .cta-row { display: flex; gap: 0.9rem; flex-wrap: wrap; align-items: center; margin-bottom: 2.2rem; }
-
-  .stat-row {
-    display: grid; grid-template-columns: repeat(4, auto);
-    gap: 1.6rem 2.2rem;
-  }
-  @media (max-width: 560px) { .stat-row { grid-template-columns: repeat(2, auto); } }
-  .stat-row div { font-family: 'Cormorant Garamond', serif; font-size: 0.74rem; color: var(--parchment-dim); letter-spacing: 0.02em; }
-  .stat-row b { display: block; font-family: 'Cinzel Decorative', serif; font-size: 1.3rem; color: var(--gold); margin-bottom: 0.15rem; }
-
-  /* phone / bezel mockup, matching the game's own gem-cut tray */
-  .phone-stage { display: flex; justify-content: center; position: relative; }
-  .phone-glow {
-    position: absolute; width: 20rem; height: 20rem; border-radius: 50%;
-    background: radial-gradient(circle, rgba(155,107,255,0.3), transparent 70%);
-    filter: blur(6px); z-index: -1;
-  }
-  .phone-bezel {
-    width: min(100%, 250px);
-    border-radius: 26px;
-    padding: 10px;
-    border: 3px solid transparent;
-    background-image:
-      linear-gradient(180deg, #241a3f, #1a1330),
-      linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 35%, var(--gold-dark) 55%, var(--gold) 100%);
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-  }
-  .phone-bezel img {
-    display: block; width: 100%; border-radius: 16px;
-  }
-
-  /* ---------------- section heads ---------------- */
-  .section-head { text-align: center; max-width: 34rem; margin: 0 auto 2.8rem; }
-  .section-head .eyebrow { justify-content: center; }
-  .section-head .eyebrow::before { display: none; }
-  .section-head h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 0.7rem; }
-  .section-head p { color: var(--parchment-dim); font-size: 0.98rem; margin: 0; }
-
-  /* ---------------- gem panel (shared card look) ---------------- */
-  .panel {
-    border-radius: 18px;
-    border: 1.5px solid var(--rule);
-    background: linear-gradient(180deg, rgba(58,42,92,0.4), rgba(26,19,48,0.6));
-    position: relative;
-    overflow: hidden;
-  }
-  .panel::before {
-    content: '';
-    position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
-    background: rgba(255,255,255,0.14);
-  }
-
-  /* ---------------- features ---------------- */
-  .features { padding: 2rem 0 5.5rem; }
-  .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
-  @media (max-width: 920px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 560px) { .feature-grid { grid-template-columns: 1fr; } }
-  .feature-card { padding: 1.8rem 1.5rem; }
-  .feature-card .icon { font-size: 1.7rem; margin-bottom: 0.9rem; display: block; }
-  .feature-card h3 { font-family: 'Cinzel Decorative', serif; font-size: 1.02rem; color: var(--gold-bright); margin: 0 0 0.6rem; }
-  .feature-card p { font-size: 0.92rem; color: var(--parchment-dim); margin: 0; }
-
-  /* ---------------- guides ---------------- */
-  .guides { padding: 2rem 0 5.5rem; }
-  .guide-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
-  @media (max-width: 920px) { .guide-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 560px) { .guide-grid { grid-template-columns: repeat(2, 1fr); } }
-  .guide-card { padding: 1.5rem 1.1rem; text-align: center; }
-  .guide-avatar {
-    width: 3rem; height: 3rem; border-radius: 50%; margin: 0 auto 0.9rem;
-    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-    background: radial-gradient(circle at 35% 30%, var(--violet), var(--night-800) 75%);
-    border: 1px solid var(--rule);
-  }
-  .guide-card h3 { font-family: 'Cinzel Decorative', serif; font-size: 0.86rem; color: var(--gold-bright); margin: 0 0 0.3rem; line-height: 1.3; }
-  .guide-floor { font-size: 0.72rem; color: var(--violet); letter-spacing: 0.04em; margin-bottom: 0.6rem; display: block; }
-  .guide-card p { font-size: 0.82rem; color: var(--parchment-dim); margin: 0; }
-
-  /* ---------------- steps ---------------- */
-  .steps { padding: 2rem 0 5.5rem; }
-  .step-list { max-width: 42rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
-  .step {
-    display: grid; grid-template-columns: 2.6rem 1fr; gap: 1.2rem;
-    padding: 1.3rem 0; border-top: 1px solid var(--rule);
-  }
-  .step:first-child { border-top: none; }
-  .step-n {
-    font-family: 'Cinzel Decorative', serif; font-size: 1.3rem; color: var(--gold);
-    display: flex; align-items: flex-start; justify-content: center; padding-top: 0.1rem;
-  }
-  .step h3 { font-family: 'Cinzel Decorative', serif; font-size: 1rem; color: var(--parchment); margin: 0 0 0.35rem; }
-  .step p { font-size: 0.92rem; color: var(--parchment-dim); margin: 0; }
-
-  /* ---------------- final cta ---------------- */
-  .final-cta { padding: 1rem 0 6rem; }
-  .cta-panel {
-    text-align: center; padding: 3.2rem 2rem; border-radius: 24px;
-    background: radial-gradient(ellipse 620px 360px at 50% 0%, rgba(155,107,255,0.25), transparent 65%), var(--night-900);
-    border: 1.5px solid var(--rule);
-  }
-  .cta-panel h2 { margin: 0 0 0.9rem; }
-  .cta-panel p { color: var(--parchment-dim); max-width: 32rem; margin: 0 auto 1.8rem; }
-
-  /* ---------------- footer ---------------- */
-  footer { border-top: 1px solid var(--rule); padding: 2.2rem 0; }
-  .foot-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-  .foot-links { display: flex; gap: 1.5rem; font-size: 0.82rem; }
-  .foot-links a { color: var(--parchment-dim); }
-  .foot-links a:hover { color: var(--gold-bright); }
-  .copyright { font-size: 0.78rem; color: var(--parchment-dim); opacity: 0.75; }
+  .colophon { padding: 4rem 0 6rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem; }
+  .colophon .masthead-font { font-weight: 900; font-size: 1.4rem; text-transform: uppercase; }
+  .colophon .meta { font-family: "Space Mono"; font-size: 0.78rem; color: var(--ink-soft); text-align: right; line-height: 1.8; }
+  .colophon .meta a:hover { color: var(--ink); text-decoration: underline; }
+  @media (max-width: 760px) { .colophon .meta { text-align: left; } }
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="wrap nav-row">
-    <div class="brand">🗼 중력의 탑</div>
-    <div class="nav-links">
-      <a href="#features">특징</a>
-      <a href="#guides">안내자들</a>
-      <a href="#steps">오르는 법</a>
-      <a href="privacy.html">개인정보처리방침</a>
-    </div>
-  </div>
-</nav>
+<a class="skip" href="#main">본문으로 바로가기</a>
+<div class="runhead"><span>KAKIMIND — ISSUE № 01 — FEATURE: TOP OF GRAVITY</span></div>
+<a class="backbar" href="https://kakimind.github.io/">← Back to Issue Index</a>
 
-<section class="hero">
-  <div class="wrap hero-grid">
+<div class="page" id="main">
+  <section class="opener">
     <div>
-      <div class="eyebrow">모바일 매치-3 · 출시 준비 중</div>
-      <h1 class="headline">중력을 거슬러,<br><span class="accent">탑 끝까지</span> 오르다</h1>
-      <p class="hero-sub">재료를 밀어 맞추는 손맛 좋은 매치-3에 중력 반전이라는 변수를 더했습니다. 6수마다 중력이 뒤집히며 보드가 다시 쏟아지는 1000개의 스테이지를 올라 보세요.</p>
-      <div class="cta-row">
-        <span class="btn btn-primary">📱 Android 출시 준비 중</span>
-        <a class="btn btn-ghost" href="#features">더 알아보기</a>
-      </div>
-      <div class="stat-row">
-        <div><b>1000</b>스테이지</div>
-        <div><b>100</b>층</div>
-        <div><b>4종</b>특수 재료</div>
-        <div><b>6수</b>마다 중력 반전</div>
-      </div>
+      <span class="kicker">§07 — Gravity-Flip Match-3 — Released</span>
+      <h1>Top of<br>Gravity</h1>
+      <p class="dek">중력이 등을 돌리는 탑. 한국어 스토어에서는 '중력의 탑'.</p>
     </div>
-    <div class="phone-stage">
-      <div class="phone-glow"></div>
-      <div class="phone-bezel">
-        <img src="assets/hero-lobby.png" alt="중력의 탑 로비 화면 — 탑 일러스트와 오르기 버튼">
-      </div>
-    </div>
-  </div>
-</section>
+    <div class="byline">BY KAKIMIND<br>SOLO ANDROID STUDIO<br>FEATURED IN ISSUE № 01</div>
+  </section>
 
-<section class="features" id="features">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Features</div>
-      <h2>매치-3, 그 이상의 변수</h2>
-      <p>단순히 맞추는 게임이 아니라, 매 순간 판을 다시 읽어야 하는 퍼즐입니다.</p>
+  <section class="plate-row">
+    <figure class="plate">
+      <img class="shot" src="assets/feature.webp" width="1024" height="500" alt="보랏빛 밤하늘을 배경으로 금빛 테두리의 마법사 탑이 서 있고, 왼쪽에 'TOWER OF GRAVITY — Climb 1000 stages. Survive the flip.'이라고 적힌 키 아트" fetchpriority="high">
+      <div class="cap"><span>FIG. 01</span><span>키 아트 — 탑과 밤하늘</span></div>
+    </figure>
+    <div class="lede">
+      <p class="body">재료를 밀어 셋 이상을 맞추는 규칙은 익숙하다. 여기에 변수가 하나 얹힌다. 몇 수마다 중력이 아래에서 왼쪽으로, 위로, 오른쪽으로 돌아가며 뒤집히고, 그때마다 판 전체가 그 방향으로 쏟아진다.</p>
+      <p class="body">판이 안정됐다 싶은 순간 모든 것이 다시 움직인다. 전환 주기는 위층으로 갈수록 짧아지고, 재료는 더 다양해지며, 판은 더 읽기 어려워진다. 지금 놓는 한 수가 중력이 돌아온 뒤에도 남아 있게 만드는 것, 그게 이 게임의 전부다.</p>
+      <div class="factbox">
+        <dl>
+          <div><dt>Platform</dt><dd>Android</dd></div>
+          <div><dt>Status</dt><dd>Released</dd></div>
+          <div><dt>Genre</dt><dd>Match Puzzle</dd></div>
+        </dl>
+      </div>
+      <a class="playbadge" href="https://play.google.com/store/apps/details?id=com.kakimind.topgravity">▶ Google Play에서 받기</a>
+      <p class="badge-note">무료 · 보상형 광고는 직접 선택할 때만 재생됩니다.</p>
     </div>
-    <div class="feature-grid">
-      <div class="panel feature-card">
-        <span class="icon">🔄</span>
-        <h3>중력 반전</h3>
-        <p>6수마다 중력이 뒤집혀 재료가 반대 방향으로 쏟아집니다. 안정됐다 싶은 순간, 판이 다시 흔들려요.</p>
-      </div>
-      <div class="panel feature-card">
-        <span class="icon">💎</span>
-        <h3>4종 특수 재료</h3>
-        <p>가로·세로 줄 클리어, 십자 폭탄, 컬러 폭탄까지. 상점에서 별가루로 구매하거나 탑 안의 사건에서 얻을 수 있어요.</p>
-      </div>
-      <div class="panel feature-card">
-        <span class="icon">🌟</span>
-        <h3>별가루 경제</h3>
-        <p>스테이지를 클리어하면 별가루를 얻습니다. 이동 수를 늘리거나 특수 재료를 사는 데 사용하세요.</p>
-      </div>
-      <div class="panel feature-card">
-        <span class="icon">❤️</span>
-        <h3>하트 시스템</h3>
-        <p>도전마다 하트 하나를 사용합니다. 시간이 지나면 자동으로 차오르고, 급하면 보충할 방법도 있어요.</p>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section class="guides" id="guides">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">탑의 주민들</div>
-      <h2>다섯 안내자가 함께 오릅니다</h2>
-      <p>층을 오르는 동안, 저마다 다른 사연을 가진 이들이 말을 걸어옵니다.</p>
-    </div>
-    <div class="guide-grid">
-      <div class="panel guide-card">
-        <div class="guide-avatar">📜</div>
-        <h3>늙은 사서</h3>
-        <span class="guide-floor">낮은 층</span>
-        <p>탑의 오래된 기록을 지키는 사서. 차분한 조언을 건넵니다.</p>
-      </div>
-      <div class="panel guide-card">
-        <div class="guide-avatar">🔥</div>
-        <h3>도깨비불</h3>
-        <span class="guide-floor">낮은 층</span>
-        <p>장난기 많은 불빛. 함정을 알려줄지 모른 척할지는 기분에 달렸어요.</p>
-      </div>
-      <div class="panel guide-card">
-        <div class="guide-avatar">🗝️</div>
-        <h3>탑의 문지기</h3>
-        <span class="guide-floor">중간 층</span>
-        <p>규칙을 지키는 엄격한 수문장. 방심하는 순간을 놓치지 않습니다.</p>
-      </div>
-      <div class="panel guide-card">
-        <div class="guide-avatar">✨</div>
-        <h3>먼지 요정</h3>
-        <span class="guide-floor">중간 층</span>
-        <p>구석구석을 뛰어다니는 작은 요정. 사소한 것에도 눈을 반짝입니다.</p>
-      </div>
-      <div class="panel guide-card">
-        <div class="guide-avatar">🪄</div>
-        <h3>견습 마법사</h3>
-        <span class="guide-floor">높은 층</span>
-        <p>당신과 비슷한 처지의 동료 모험가. 서로 의지하며 함께 올라갑니다.</p>
-      </div>
-    </div>
-  </div>
-</section>
+  <section class="pull-section">
+    <div class="label">What's Inside</div>
+    <ul class="feature-list">
+      <li><span class="fnum">01</span><div><h3>중력 전환</h3><p>몇 수마다 중력이 아래 → 왼쪽 → 위 → 오른쪽 순으로 뒤집히고, 보드 전체가 그 방향으로 재배치됩니다. 어떤 판도 오래 가만히 있지 않습니다.</p></div></li>
+      <li><span class="fnum">02</span><div><h3>특수 재료 4종</h3><p>4매치는 가로·세로 줄 제거, L·T자 교차 매치는 십자 폭탄, 5매치 이상은 같은 색을 전부 지우는 컬러 폭탄이 됩니다. 별가루로 상점에서 사거나, 탑을 오르다 이벤트로 받습니다.</p></div></li>
+      <li><span class="fnum">03</span><div><h3>별가루와 상점</h3><p>스테이지를 클리어하면 별가루가 쌓이고, 목표 점수의 두 배를 넘기면 보너스가 붙습니다. 다음 판 주문 +3이나 특수 재료를 미리 사 두면 험한 구간을 넘기기 수월해집니다.</p></div></li>
+      <li><span class="fnum">04</span><div><h3>하트</h3><p>한 판에 하트 하나가 듭니다. 최대 다섯 개까지 모이고 15분마다 하나씩 다시 차오릅니다. 이동 수가 떨어지면 광고를 보고 더 받거나, 하트 하나를 쓰고 나갈 수 있습니다.</p></div></li>
+      <li><span class="fnum">05</span><div><h3>함께 오르는 다섯 안내자</h3><p>늙은 사서, 도깨비불, 탑의 문지기, 먼지 요정, 견습 마법사. 층마다 다른 화자가 자기 말투로 이야기를 건네고, 30·60·80·95층의 전환점은 언제나 문지기가 선포합니다.</p></div></li>
+    </ul>
+  </section>
 
-<section class="steps" id="steps">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">How to climb</div>
-      <h2>탑을 오르는 법</h2>
-    </div>
-    <div class="step-list">
-      <div class="step">
-        <div class="step-n">01</div>
-        <div><h3>재료를 밀어 맞추기</h3><p>이웃한 재료를 원하는 방향으로 밀어 3개 이상 줄을 맞추면 사라집니다.</p></div>
-      </div>
-      <div class="step">
-        <div class="step-n">02</div>
-        <div><h3>특수 재료 만들기</h3><p>4개 이상 한 번에 맞추면 줄 클리어, 십자 폭탄, 컬러 폭탄 같은 특수 재료가 탄생해요.</p></div>
-      </div>
-      <div class="step">
-        <div class="step-n">03</div>
-        <div><h3>중력 반전에 대비하기</h3><p>6수마다 중력이 뒤집히며 보드 전체가 반대 방향으로 다시 쏟아집니다.</p></div>
-      </div>
-      <div class="step">
-        <div class="step-n">04</div>
-        <div><h3>목표 마력 달성하기</h3><p>정해진 이동 수 안에 목표 점수를 넘기면 다음 층으로 올라갑니다.</p></div>
-      </div>
-    </div>
-  </div>
-</section>
+  <section class="pull-section">
+    <div class="label">By the Numbers</div>
+    <dl class="figures">
+      <div><dt>스테이지</dt><dd>1000<span>10스테이지가 한 층, 모두 100개 층</span></dd></div>
+      <div><dt>특수 재료</dt><dd>4<span>줄 제거 둘, 십자 폭탄, 컬러 폭탄</span></dd></div>
+      <div><dt>안내자</dt><dd>5<span>층수대로 말투가 달라지는 화자들</span></dd></div>
+      <div><dt>지원 언어</dt><dd>22<span>설정에서 언제든 변경</span></dd></div>
+    </dl>
+  </section>
 
-<section class="final-cta">
-  <div class="wrap">
-    <div class="cta-panel">
-      <div class="eyebrow" style="justify-content:center;">출시 준비 중</div>
-      <h2>탑은 지금도<br>조금씩 다듬어지고 있습니다</h2>
-      <p>디자인과 밸런스를 가다듬는 중이에요. 출시 소식은 추후 이 페이지를 통해 안내드릴게요.</p>
+  <section class="pull-section">
+    <div class="label">From the Tower — 실제 플레이 화면</div>
+    <div class="gallery">
+      <figure>
+        <img src="assets/shots/lobby.webp" width="720" height="1280" loading="lazy" alt="로비 화면. 밤하늘 아래 보랏빛 성채형 탑이 서 있고 위쪽에 5층·스테이지 41/1000, 별가루 2400과 하트 다섯 개, 보유 부스터 목록이 표시된다. 아래에 '탑 오르기'와 '상점' 버튼이 있다.">
+        <figcaption class="cap"><span>FIG. 02</span><span>로비 — 층과 별가루</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/shots/board.webp" width="720" height="1280" loading="lazy" alt="플레이 화면. 8×8 보드에 포션병·룬석·물방울 모양 재료가 채워져 있고 상단에 탑 41, 주문 24, 마력 0, 목표 738, 아이템 14가 표시된다. 하단에 '6수마다 실패한 주문이 중력을 뒤집습니다'라는 안내가 있다.">
+        <figcaption class="cap"><span>FIG. 03</span><span>플레이 — 중력 전환 카운트</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/shots/story.webp" width="720" height="1280" loading="lazy" alt="이야기 화면. 어두워진 보드 위로 카드가 떠 있고 '탑의 문지기'가 5층·스테이지 41에서 '5층 통과. 규칙은 간단해, 방심하지 말 것.'이라고 말한다. 아래에 '시작' 버튼이 있다.">
+        <figcaption class="cap"><span>FIG. 04</span><span>이야기 — 층마다 다른 화자</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/shots/shop.webp" width="720" height="1280" loading="lazy" alt="상점 화면. 다음 판 주문 +3이 별가루 45, 가로줄 제거와 세로줄 제거가 각 40, 십자 폭탄이 70으로 나열돼 있고 컬러 폭탄은 8층 해금으로 잠겨 있다. 맨 아래에 광고를 보고 별가루 200개를 받는 항목이 있다.">
+        <figcaption class="cap"><span>FIG. 05</span><span>상점 — 별가루로 사는 주문</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/shots/stageclear.webp" width="720" height="1280" loading="lazy" alt="스테이지 클리어 화면. 보드 위로 초록 테두리 카드가 떠서 '스테이지 41 클리어! 목표 2배 달성!'과 별가루 +12를 알리고, '다음 스테이지 42'와 '로비로' 버튼이 놓여 있다.">
+        <figcaption class="cap"><span>FIG. 06</span><span>클리어 — 목표 2배 보너스</span></figcaption>
+      </figure>
     </div>
-  </div>
-</section>
+  </section>
 
-<footer>
-  <div class="wrap foot-row">
-    <div class="foot-links">
-      <a href="privacy.html">개인정보처리방침</a>
-      <a href="https://kakimind.github.io/apps/">kakimind의 다른 앱</a>
-      <a href="mailto:kakimind@gmail.com">문의하기</a>
+  <section class="pull-section">
+    <div class="label">How to Play</div>
+    <div class="note-row">
+      <p class="standfirst">맞추는 건 쉽습니다. 어려운 건 중력이 돌아온 뒤에도 그 수가 남아 있게 만드는 쪽입니다.</p>
+      <ul class="feature-list">
+        <li><span class="fnum">01</span><div><h3>재료를 밀어 셋을 맞추세요</h3><p>원하는 방향으로 밀어 같은 재료 셋 이상을 이으면 사라집니다. 넷 이상이면 특수 재료로 승격됩니다.</p></div></li>
+        <li><span class="fnum">02</span><div><h3>전환까지 남은 수를 보세요</h3><p>상단의 주문 수가 다음 전환까지 몇 수가 남았는지 알려줍니다. 뒤집히면 보드 전체가 새 방향으로 쏟아지니, 지금 쌓은 모양이 그 뒤에도 남을지 먼저 가늠하세요.</p></div></li>
+        <li><span class="fnum">03</span><div><h3>특수 재료는 아껴 두세요</h3><p>탭 두 번으로 바로 터뜨리거나, 옆 재료와 스왑하거나, 일반 매치에 휩쓸리게 할 수 있습니다. 중력이 뒤집힌 직후의 어지러운 판에서 가장 값어치를 합니다.</p></div></li>
+      </ul>
     </div>
-    <div class="copyright">© 2026 kakimind — 중력의 탑 (Tower of Gravity)</div>
-  </div>
-</footer>
+  </section>
 
+  <section class="pull-section">
+    <div class="label">Offline &amp; Records</div>
+    <div class="note-row">
+      <p class="standfirst">계정도 로그인도 없습니다. 오른 높이는 플레이한 기기에 남습니다.</p>
+      <div>
+        <p class="body">진행한 스테이지, 보유 별가루, 하트 상태, 사 둔 특수 재료는 모두 기기 안에만 저장됩니다. 서버로 올라가는 것이 없으니 회원가입 절차도 없고, 저희가 그 기록을 들여다볼 방법도 없습니다.</p>
+        <p class="body">글꼴까지 앱에 담아 네트워크가 없어도 첫 화면부터 제 모습으로 열립니다. 다만 앱을 삭제하거나 기기를 바꾸면 기록은 자동으로 복원되지 않습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="pull-section">
+    <div class="label">A Fair Climb — 광고 정책</div>
+    <div class="note-row">
+      <p class="standfirst">직접 누르는 보상형 광고만 있습니다. 끼어드는 광고는 없습니다.</p>
+      <div>
+        <ul class="feature-list">
+          <li><span class="fnum">01</span><div><h3>전면광고도, 상시 배너도 없음</h3><p>플레이 중 화면을 덮는 광고나 늘 자리를 차지하는 배너는 사용하지 않습니다.</p></div></li>
+          <li><span class="fnum">02</span><div><h3>보상은 직접 선택할 때만</h3><p>별가루 충전, 하트 충전, 이동 수 추가는 "광고 보고 받기"를 직접 누른 경우에만 재생됩니다.</p></div></li>
+          <li><span class="fnum">03</span><div><h3>끝까지 봤을 때만 지급</h3><p>중간에 닫거나 오프라인이면 보상이 지급되지 않습니다. 광고는 Google AdMob으로 동작합니다.</p></div></li>
+        </ul>
+        <a class="readlink" href="privacy.html">개인정보처리방침 및 AdMob 처리 안내 →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <span class="masthead-font">Kakimind</span>
+    <div class="meta">
+      <a href="privacy.html">개인정보처리방침</a> · <a href="https://kakimind.github.io/">다른 작품 보기</a><br>
+      Contact: <a href="mailto:kakimind@gmail.com">kakimind@gmail.com</a><br>
+      © 2026 kakimind — 중력의 탑 / Top of Gravity
+    </div>
+  </footer>
+</div>
 </body>
 </html>
